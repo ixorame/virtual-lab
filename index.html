@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab - Ohm's Law</title>
+  <title>Virtual Lab</title>
 
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       background: #f2f2f2;
       text-align: center;
       padding-top: 40px;
     }
 
-    .lab-box {
+    .box {
       background: white;
-      width: 300px;
+      width: 320px;
       margin: auto;
       padding: 20px;
       border-radius: 10px;
@@ -21,14 +21,34 @@
 
     input {
       width: 100%;
+      margin: 10px 0;
+    }
+
+    button {
+      padding: 8px 15px;
+      cursor: pointer;
+    }
+
+    #lab {
+      display: none; /* hidden initially */
     }
   </style>
 </head>
 
 <body>
 
-  <div class="lab-box">
-    <h2>Ohm’s Law</h2>
+  <!-- Screen 1: Ask Experiment -->
+  <div class="box" id="start">
+    <h2>Virtual Lab</h2>
+    <p>Enter Experiment Name</p>
+
+    <input type="text" id="expName" placeholder="e.g. Ohm's Law">
+    <button onclick="startExperiment()">Start Experiment</button>
+  </div>
+
+  <!-- Screen 2: Experiment Lab -->
+  <div class="box" id="lab">
+    <h2 id="labTitle"></h2>
 
     <p>Voltage (V)</p>
     <input type="range" id="voltage" min="0" max="20" value="0" oninput="calculate()">
@@ -43,6 +63,19 @@
   </div>
 
   <script>
+    function startExperiment() {
+      const name = document.getElementById("expName").value;
+
+      if (name === "") {
+        alert("Please enter experiment name");
+        return;
+      }
+
+      document.getElementById("labTitle").innerText = name;
+      document.getElementById("start").style.display = "none";
+      document.getElementById("lab").style.display = "block";
+    }
+
     function calculate() {
       let V = document.getElementById("voltage").value;
       let R = document.getElementById("resistance").value;
