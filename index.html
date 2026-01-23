@@ -3,7 +3,6 @@
 <head>
   <title>Virtual Lab</title>
 
-  <!-- Chart.js for graph -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -11,109 +10,186 @@
       font-family: Arial;
       background: #f2f2f2;
       text-align: center;
-      padding-top: 30px;
+      padding: 20px;
     }
 
     .box {
       background: white;
-      width: 350px;
-      margin: auto;
+      max-width: 600px;
+      margin: 20px auto;
       padding: 20px;
       border-radius: 10px;
+      text-align: left;
     }
 
     select, button, input {
+      margin: 8px 0;
+      padding: 6px;
       width: 100%;
-      margin: 10px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #999;
+      padding: 6px;
+      text-align: center;
     }
 
     #lab {
       display: none;
+    }
+
+    canvas {
+      margin-top: 20px;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- Screen 1: Experiment Selection -->
-  <div class="box" id="start">
-    <h2>Virtual Lab</h2>
+<!-- Experiment Selection -->
+<div class="box" id="start">
+  <h2>Virtual Lab</h2>
 
-    <p>Select Experiment</p>
-    <select id="experiment">
-      <option value="">-- Choose --</option>
-      <option value="ohm">Ohm's Law</option>
-    </select>
+  <label>Select Experiment</label>
+  <select id="experiment">
+    <option value="">-- Choose --</option>
+    <option value="ohm">Ohm's Law</option>
+  </select>
 
-    <button onclick="startExperiment()">Start Experiment</button>
-  </div>
+  <button onclick="startExperiment()">Start Experiment</button>
+</div>
 
-  <!-- Screen 2: Lab -->
-  <div class="box" id="lab">
-    <h2 id="labTitle"></h2>
+<!-- Lab Area -->
+<div class="box" id="lab">
 
-    <p>Voltage (V)</p>
-    <input type="range" id="voltage" min="0" max="20" value="0" oninput="calculate()">
-    <p id="vValue">0 V</p>
+  <h2 id="labTitle"></h2>
 
-    <p>Resistance (Ω)</p>
-    <input type="range" id="resistance" min="1" max="100" value="1" oninput="calculate()">
-    <p id="rValue">1 Ω</p>
+  <!-- Theory -->
+  <h3>Theory</h3>
+  <p>
+    Ohm’s Law states that the current flowing through a conductor is directly
+    proportional to the voltage across it, provided temperature remains constant.
+    <br><br>
+    <b>V = I × R</b>
+  </p>
 
-    <h3>Current (I): <span id="current">0</span> A</h3>
+  <!-- Procedure -->
+  <h3>Procedure</h3>
+  <ol>
+    <li>Set the resistance value.</li>
+    <li>Vary the voltage using the slider.</li>
+    <li>Note the current value.</li>
+    <li>Add readings to the table.</li>
+    <li>Plot the V–I graph.</li>
+  </ol>
 
-    <canvas id="graph"></canvas>
-  </div>
+  <!-- Controls -->
+  <h3>Controls</h3>
 
-  <script>
-    let chart;
-    let voltageData = [];
-    let currentData = [];
+  Voltage (V)
+  <input type="range" id="voltage" min="0" max="20" value="0" oninput="updateValues()">
+  <span id="vValue">0</span> V
 
-    function startExperiment() {
-      const exp = document.getElementById("experiment").value;
+  <br><br>
 
-      if (exp === "") {
-        alert("Please select an experiment");
-        return;
+  Resistance (Ω)
+  <input type="range" id="resistance" min="1" max="100" value="10" oninput="updateValues()">
+  <span id="rValue">10</span> Ω
+
+  <p><b>Current (I):</b> <span id="current">0</span> A</p>
+
+  <button onclick="addReading()">Add Reading</button>
+
+  <!-- Table -->
+  <h3>Observation Table</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Voltage (V)</th>
+        <th>Current (A)</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <!-- Graph Buttons -->
+  <button onclick="plotGraph()">Plot Graph</button>
+  <button onclick="resetGraph()">Reset Graph</button>
+
+  <canvas id="graph"></canvas>
+
+</div>
+
+<script>
+  let readings = [];
+  let chart;
+
+  function startExperiment() {
+    const exp = document.getElementById("experiment").value;
+    if (exp === "") {
+      alert("Please select an experiment");
+      return;
+    }
+
+    document.getElementById("start").style.display = "none";
+    document.getElementById("lab").style.display = "block";
+    document.getElementById("labTitle").innerText = "Ohm's Law Experiment";
+  }
+
+  function updateValues() {
+    let V = Number(document.getElementById("voltage").value);
+    let R = Number(document.getElementById("resistance").value);
+    let I = (V / R).toFixed(2);
+
+    document.getElementById("vValue").innerText = V;
+    document.getElementById("rValue").innerText = R;
+    document.getElementById("current").innerText = I;
+  }
+
+  function addReading() {
+    let V = Number(document.getElementById("voltage").value);
+    let R = Number(document.getElementById("resistance").value);
+    let I = (V / R).toFixed(2);
+
+    readings.push({ V, I });
+
+    let row = <tr><td>${V}</td><td>${I}</td></tr>;
+    document.getElementById("tableBody").innerHTML += row;
+  }
+
+  function plotGraph() {
+    const ctx = document.getElementById("graph").getContext("2d");
+
+    let voltages = readings.map(r => r.V);
+    let currents = readings.map(r => r.I);
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: voltages,
+        datasets: [{
+          label: "V–I Graph",
+          data: currents,
+          borderWidth: 2
+        }]
       }
+    });
+  }
 
-      document.getElementById("start").style.display = "none";
-      document.getElementById("lab").style.display = "block";
-      document.getElementById("labTitle").innerText = "Ohm's Law Experiment";
-
-      const ctx = document.getElementById("graph").getContext("2d");
-
-      chart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: voltageData,
-          datasets: [{
-            label: "V-I Graph",
-            data: currentData,
-            borderWidth: 2
-          }]
-        }
-      });
-    }
-
-    function calculate() {
-      let V = Number(document.getElementById("voltage").value);
-      let R = Number(document.getElementById("resistance").value);
-
-      document.getElementById("vValue").innerText = V + " V";
-      document.getElementById("rValue").innerText = R + " Ω";
-
-      let I = (V / R).toFixed(2);
-      document.getElementById("current").innerText = I;
-
-      // update graph
-      voltageData.push(V);
-      currentData.push(I);
-
-      chart.update();
-    }
-  </script>
+  function resetGraph() {
+    readings = [];
+    document.getElementById("tableBody").innerHTML = "";
+    if (chart) chart.destroy();
+  }
+</script>
 
 </body>
 </html>
