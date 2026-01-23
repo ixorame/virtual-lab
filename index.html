@@ -1,196 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <style>
-    body {
-      font-family: Arial;
-      background: #f2f2f2;
-      padding: 20px;
-    }
-    .box {
-      background: white;
-      padding: 20px;
-      max-width: 700px;
-      margin: auto;
-      border-radius: 10px;
-    }
-    select, button, input {
-      width: 100%;
-      margin: 8px 0;
-      padding: 6px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      border: 1px solid #666;
-      padding: 6px;
-      text-align: center;
-    }
-    #lab {
-      display: none;
-    }
-  </style>
+  <title>Screen Test</title>
 </head>
 
 <body>
 
-<!-- START SCREEN -->
-<div class="box" id="start">
-  <h2>Virtual Lab</h2>
-
-  <label>Select Experiment</label>
-  <select id="experiment">
-    <option value="">-- Select --</option>
-    <option value="ohm">Ohm's Law</option>
-  </select>
-
-  <button id="startBtn">Start Experiment</button>
+<div id="screen1">
+  <h2>Screen 1</h2>
+  <button onclick="goNext()">Go to Screen 2</button>
 </div>
 
-<!-- LAB SCREEN -->
-<div class="box" id="lab">
-
-  <h2>Ohm's Law Experiment</h2>
-
-  <h3>Theory</h3>
-  <p>
-    Ohm’s Law states that current is directly proportional to voltage
-    when temperature is constant.
-    <br><b>V = I × R</b>
-  </p>
-
-  <h3>Procedure</h3>
-  <ol>
-    <li>Set resistance.</li>
-    <li>Vary voltage.</li>
-    <li>Note current.</li>
-    <li>Add readings.</li>
-    <li>Plot graph.</li>
-  </ol>
-
-  <h3>Controls</h3>
-
-  Voltage (V)
-  <input type="range" id="voltage" min="0" max="20" value="0">
-  <span id="vVal">0</span>
-
-  <br><br>
-
-  Resistance (Ω)
-  <input type="range" id="resistance" min="1" max="100" value="10">
-  <span id="rVal">10</span>
-
-  <p>Current (A): <span id="current">0</span></p>
-
-  <button id="addBtn">Add Reading</button>
-
-  <h3>Observation Table</h3>
-  <table>
-    <thead>
-      <tr>
-        <th>Voltage (V)</th>
-        <th>Current (A)</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-
-  <button id="plotBtn">Plot Graph</button>
-  <button id="resetBtn">Reset</button>
-
-  <canvas id="graph"></canvas>
+<div id="screen2" style="display:none;">
+  <h2>Screen 2</h2>
+  <p>You reached the next screen.</p>
 </div>
 
 <script>
-  // ELEMENTS
-  const startBtn = document.getElementById("startBtn");
-  const addBtn = document.getElementById("addBtn");
-  const plotBtn = document.getElementById("plotBtn");
-  const resetBtn = document.getElementById("resetBtn");
-
-  const voltage = document.getElementById("voltage");
-  const resistance = document.getElementById("resistance");
-
-  const vVal = document.getElementById("vVal");
-  const rVal = document.getElementById("rVal");
-  const currentText = document.getElementById("current");
-
-  const tableBody = document.getElementById("tableBody");
-
-  let readings = [];
-  let chart = null;
-
-  // START BUTTON
-  startBtn.onclick = function () {
-    const exp = document.getElementById("experiment").value;
-    if (exp === "") {
-      alert("Select an experiment");
-      return;
-    }
-    document.getElementById("start").style.display = "none";
-    document.getElementById("lab").style.display = "block";
-  };
-
-  // UPDATE VALUES
-  function update() {
-    const V = Number(voltage.value);
-    const R = Number(resistance.value);
-    const I = (V / R).toFixed(2);
-
-    vVal.innerText = V;
-    rVal.innerText = R;
-    currentText.innerText = I;
+  function goNext() {
+    document.getElementById("screen1").style.display = "none";
+    document.getElementById("screen2").style.display = "block";
   }
-
-  voltage.oninput = update;
-  resistance.oninput = update;
-
-  // ADD READING
-  addBtn.onclick = function () {
-    const V = Number(voltage.value);
-    const R = Number(resistance.value);
-    const I = (V / R).toFixed(2);
-
-    readings.push({ V, I });
-    tableBody.innerHTML += <tr><td>${V}</td><td>${I}</td></tr>;
-  };
-
-  // PLOT GRAPH
-  plotBtn.onclick = function () {
-    if (readings.length === 0) {
-      alert("Add readings first");
-      return;
-    }
-
-    const ctx = document.getElementById("graph").getContext("2d");
-    if (chart) chart.destroy();
-
-    chart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: readings.map(r => r.V),
-        datasets: [{
-          label: "V–I Graph",
-          data: readings.map(r => r.I),
-          borderWidth: 2
-        }]
-      }
-    });
-  };
-
-  // RESET
-  resetBtn.onclick = function () {
-    readings = [];
-    tableBody.innerHTML = "";
-    if (chart) chart.destroy();
-    chart = null;
-  };
 </script>
 
 </body>
