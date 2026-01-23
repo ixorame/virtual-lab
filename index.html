@@ -1,31 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Virtual Lab</title>
 
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
-      font-family: Arial;
+      font-family: Arial, sans-serif;
       background: #f2f2f2;
-      text-align: center;
       padding: 20px;
     }
 
     .box {
       background: white;
-      max-width: 600px;
-      margin: 20px auto;
+      max-width: 700px;
+      margin: auto;
       padding: 20px;
       border-radius: 10px;
-      text-align: left;
+      margin-bottom: 20px;
+    }
+
+    h2, h3 {
+      text-align: center;
     }
 
     select, button, input {
-      margin: 8px 0;
-      padding: 6px;
       width: 100%;
+      padding: 6px;
+      margin: 8px 0;
     }
 
     table {
@@ -35,7 +40,7 @@
     }
 
     th, td {
-      border: 1px solid #999;
+      border: 1px solid #888;
       padding: 6px;
       text-align: center;
     }
@@ -52,25 +57,25 @@
 
 <body>
 
-<!-- Experiment Selection -->
+<!-- ================= START SCREEN ================= -->
 <div class="box" id="start">
   <h2>Virtual Lab</h2>
 
   <label>Select Experiment</label>
   <select id="experiment">
-    <option value="">-- Choose --</option>
+    <option value="">-- Select --</option>
     <option value="ohm">Ohm's Law</option>
   </select>
 
   <button onclick="startExperiment()">Start Experiment</button>
 </div>
 
-<!-- Lab Area -->
+<!-- ================= LAB SCREEN ================= -->
 <div class="box" id="lab">
 
   <h2 id="labTitle"></h2>
 
-  <!-- Theory -->
+  <!-- THEORY -->
   <h3>Theory</h3>
   <p>
     Ohm’s Law states that the current flowing through a conductor is directly
@@ -79,17 +84,17 @@
     <b>V = I × R</b>
   </p>
 
-  <!-- Procedure -->
+  <!-- PROCEDURE -->
   <h3>Procedure</h3>
   <ol>
     <li>Set the resistance value.</li>
-    <li>Vary the voltage using the slider.</li>
+    <li>Vary the voltage.</li>
     <li>Note the current value.</li>
     <li>Add readings to the table.</li>
-    <li>Plot the V–I graph.</li>
+    <li>Plot the graph.</li>
   </ol>
 
-  <!-- Controls -->
+  <!-- CONTROLS -->
   <h3>Controls</h3>
 
   Voltage (V)
@@ -106,7 +111,7 @@
 
   <button onclick="addReading()">Add Reading</button>
 
-  <!-- Table -->
+  <!-- TABLE -->
   <h3>Observation Table</h3>
   <table>
     <thead>
@@ -118,7 +123,7 @@
     <tbody id="tableBody"></tbody>
   </table>
 
-  <!-- Graph Buttons -->
+  <!-- GRAPH BUTTONS -->
   <button onclick="plotGraph()">Plot Graph</button>
   <button onclick="resetGraph()">Reset Graph</button>
 
@@ -126,24 +131,14 @@
 
 </div>
 
+<!-- ================= JAVASCRIPT ================= -->
 <script>
   let readings = [];
-  let chart;
-  function startExperiment() {
-  const expSelect = document.getElementById("experiment");
-
-  if (!expSelect || expSelect.value === "") {
-    alert("Please select an experiment");
-    return;
-  }
-
-  document.getElementById("start").style.display = "none";
-  document.getElementById("lab").style.display = "block";
-  document.getElementById("labTitle").innerText = "Ohm's Law Experiment";
-}
+  let chart = null;
 
   function startExperiment() {
     const exp = document.getElementById("experiment").value;
+
     if (exp === "") {
       alert("Please select an experiment");
       return;
@@ -176,10 +171,15 @@
   }
 
   function plotGraph() {
-    const ctx = document.getElementById("graph").getContext("2d");
+    if (readings.length === 0) {
+      alert("Add readings first");
+      return;
+    }
 
     let voltages = readings.map(r => r.V);
     let currents = readings.map(r => r.I);
+
+    const ctx = document.getElementById("graph").getContext("2d");
 
     if (chart) chart.destroy();
 
@@ -200,6 +200,7 @@
     readings = [];
     document.getElementById("tableBody").innerHTML = "";
     if (chart) chart.destroy();
+    chart = null;
   }
 </script>
 
