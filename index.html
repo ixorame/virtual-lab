@@ -20,6 +20,34 @@
 
   <h2 id="title"></h2>
 
+  <!-- THEORY -->
+  <h3>Theory</h3>
+  <p>
+    Ohm’s Law states that the current flowing through a conductor is directly
+    proportional to the voltage applied across it, provided the temperature
+    and other physical conditions remain constant.
+  </p>
+  <p>
+    Mathematically,
+    <br><b>V = I × R</b>
+    <br>where,
+    <br>V = Voltage (Volts)
+    <br>I = Current (Amperes)
+    <br>R = Resistance (Ohms)
+  </p>
+
+  <!-- PROCEDURE -->
+  <h3>Procedure</h3>
+  <ol>
+    <li>Select the Ohm’s Law experiment.</li>
+    <li>Enter a suitable value of resistance.</li>
+    <li>Apply different voltage values.</li>
+    <li>Calculate the corresponding current.</li>
+    <li>Enter the readings into the observation table.</li>
+    <li>Plot the V–I graph using the readings.</li>
+  </ol>
+
+  <!-- INPUT -->
   <h3>Enter Values</h3>
 
   Voltage (V)<br>
@@ -30,8 +58,8 @@
 
   <button onclick="addReading()">Add Reading</button>
 
+  <!-- TABLE -->
   <h3>Observation Table</h3>
-
   <table border="1" cellpadding="6">
     <thead>
       <tr>
@@ -46,6 +74,7 @@
   <br>
   <button onclick="plotGraph()">Plot V–I Graph</button>
 
+  <!-- GRAPH -->
   <h3>V–I Graph</h3>
   <canvas id="graph" width="400" height="300" style="border:1px solid black;"></canvas>
 
@@ -102,34 +131,30 @@
     const canvas = document.getElementById("graph");
     const ctx = canvas.getContext("2d");
 
-    // clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // axes
+    // Axes
     ctx.beginPath();
     ctx.moveTo(40, 10);
     ctx.lineTo(40, 260);
     ctx.lineTo(380, 260);
     ctx.stroke();
 
-    // labels
+    // Labels
     ctx.fillText("Voltage (V)", 170, 290);
     ctx.save();
     ctx.rotate(-Math.PI / 2);
     ctx.fillText("Current (A)", -170, 15);
     ctx.restore();
 
-    // scaling
     let maxV = Math.max(...readings.map(r => r.V));
     let maxI = Math.max(...readings.map(r => r.I));
 
-    // plot points
     ctx.beginPath();
-    readings.forEach((r, index) => {
+    readings.forEach((r, i) => {
       let x = 40 + (r.V / maxV) * 320;
       let y = 260 - (r.I / maxI) * 240;
-
-      if (index === 0) ctx.moveTo(x, y);
+      if (i === 0) ctx.moveTo(x, y);
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
@@ -137,4 +162,4 @@
 </script>
 
 </body>
-</html>
+</html>>
