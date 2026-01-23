@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab</title>
-
-  <!-- Chart.js for graph -->
+  <title>Virtual Lab – Ohm's Law</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -14,27 +12,29 @@
 
     table {
       border-collapse: collapse;
-      margin-top: 15px;
       width: 100%;
+      margin-top: 10px;
     }
 
     th, td {
       border: 1px solid black;
-      padding: 8px;
+      padding: 6px;
       text-align: center;
     }
 
     #screen2 {
+      display: none;
       margin-top: 20px;
     }
 
     button {
-      margin-top: 10px;
+      margin-top: 8px;
       padding: 6px 10px;
     }
 
-    canvas {
-      margin-top: 20px;
+    svg {
+      margin-top: 15px;
+      border: 1px solid #aaa;
     }
   </style>
 </head>
@@ -55,26 +55,25 @@
 </div>
 
 <!-- ================= SCREEN 2 ================= -->
-<div id="screen2" style="display:none;">
+<div id="screen2">
 
-  <h2 id="expTitle"></h2>
+  <h2>Ohm's Law Experiment</h2>
 
   <!-- THEORY -->
   <h3>Theory</h3>
   <p>
-    Ohm’s Law states that the current flowing through a conductor is directly
-    proportional to the voltage across it, provided the temperature remains constant.
+    Ohm’s Law states that current through a conductor is directly proportional
+    to the voltage across it, provided temperature remains constant.
   </p>
   <p><b>V = I × R</b></p>
 
   <!-- PROCEDURE -->
   <h3>Procedure</h3>
   <ol>
-    <li>Set a suitable resistance value.</li>
-    <li>Apply different voltage values.</li>
-    <li>Calculate the corresponding current.</li>
-    <li>Enter readings in the observation table.</li>
+    <li>Enter voltage and resistance values.</li>
+    <li>Add readings to the table.</li>
     <li>Plot the V–I graph.</li>
+    <li>Observe current flow in simulation.</li>
   </ol>
 
   <!-- INPUT -->
@@ -103,26 +102,40 @@
 
   <!-- GRAPH -->
   <button onclick="plotGraph()">Plot V–I Graph</button>
+  <canvas id="graph" width="400" height="250"></canvas>
 
-  <canvas id="graph" width="400" height="300"></canvas>
+  <!-- SIMULATION -->
+  <h3>Simulation (Current Flow)</h3>
+
+  <svg width="400" height="120">
+    <!-- wire -->
+    <rect x="20" y="55" width="360" height="10" fill="black"/>
+    <!-- battery -->
+    <rect x="60" y="30" width="8" height="60" fill="black"/>
+    <rect x="75" y="40" width="3" height="40" fill="black"/>
+    <!-- resistor -->
+    <rect x="200" y="35" width="40" height="50" fill="#999"/>
+    <!-- electron -->
+    <circle id="electron" cx="30" cy="60" r="5" fill="red"/>
+  </svg>
 
 </div>
 
+<!-- ================= SCRIPT ================= -->
 <script>
   let readings = [];
   let chart = null;
+  let pos = 30;
+  let interval = null;
 
   function goNext() {
     const exp = document.getElementById("experiment").value;
-
     if (exp === "") {
-      alert("Please select an experiment");
+      alert("Select an experiment");
       return;
     }
-
     document.getElementById("screen1").style.display = "none";
     document.getElementById("screen2").style.display = "block";
-    document.getElementById("expTitle").innerText = "Ohm's Law Experiment";
   }
 
   function addReading() {
@@ -130,22 +143,17 @@
     const R = Number(document.getElementById("resistance").value);
 
     if (V <= 0 || R <= 0) {
-      alert("Enter valid Voltage and Resistance");
+      alert("Enter valid values");
       return;
     }
 
     const I = (V / R).toFixed(3);
-
     readings.push({ V, I });
 
-    const row = `
-      <tr>
-        <td>${V}</td>
-        <td>${R}</td>
-        <td>${I}</td>
-      </tr>
-    `;
-    document.getElementById("tableBody").innerHTML += row;
+    document.getElementById("tableBody").innerHTML +=
+      <tr><td>${V}</td><td>${R}</td><td>${I}</td></tr>;
+
+    startSimulation(I);
 
     document.getElementById("voltage").value = "";
     document.getElementById("resistance").value = "";
@@ -153,12 +161,11 @@
 
   function plotGraph() {
     if (readings.length === 0) {
-      alert("Add readings before plotting graph");
+      alert("Add readings first");
       return;
     }
 
     const ctx = document.getElementById("graph").getContext("2d");
-
     if (chart) chart.destroy();
 
     chart = new Chart(ctx, {
@@ -172,6 +179,19 @@
         }]
       }
     });
+  }
+
+  function startSimulation(current) {
+    const electron = document.getElementById("electron");
+    let speed = current * 4;
+
+    if (interval) clearInterval(interval);
+
+    interval = setInterval(() => {
+      pos += speed;
+      if (pos > 380) pos = 30;
+      electron.setAttribute("cx", pos);
+    }, 100);
   }
 </script>
 
