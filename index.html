@@ -2,7 +2,7 @@
 <html>
 <body>
 
-<!-- SCREEN 1 -->
+<!-- ================= SCREEN 1 ================= -->
 <div id="screen1">
   <h2>Virtual Lab</h2>
 
@@ -15,12 +15,34 @@
   <button onclick="goNext()">Start Experiment</button>
 </div>
 
-<!-- SCREEN 2 -->
+<!-- ================= SCREEN 2 ================= -->
 <div id="screen2" style="display:none;">
-  <h2>Experiment Screen</h2>
-  <p id="expName"></p>
+  <h2 id="expTitle"></h2>
+
+  <h3>Enter Values</h3>
+
+  Voltage (V):<br>
+  <input type="number" id="voltage" step="0.1"><br><br>
+
+  Resistance (Ω):<br>
+  <input type="number" id="resistance" step="0.1"><br><br>
+
+  <button onclick="addReading()">Add Reading</button>
+
+  <h3>Observation Table</h3>
+  <table border="1" cellpadding="5">
+    <thead>
+      <tr>
+        <th>Voltage (V)</th>
+        <th>Resistance (Ω)</th>
+        <th>Current (A)</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
 </div>
 
+<!-- ================= SCRIPT ================= -->
 <script>
   function goNext() {
     const exp = document.getElementById("experiment").value;
@@ -32,8 +54,33 @@
 
     document.getElementById("screen1").style.display = "none";
     document.getElementById("screen2").style.display = "block";
-    document.getElementById("expName").innerText =
-      "You selected: Ohm's Law";
+    document.getElementById("expTitle").innerText = "Ohm's Law Experiment";
+  }
+
+  function addReading() {
+    const V = Number(document.getElementById("voltage").value);
+    const R = Number(document.getElementById("resistance").value);
+
+    if (V <= 0 || R <= 0) {
+      alert("Enter valid Voltage and Resistance");
+      return;
+    }
+
+    const I = (V / R).toFixed(3);
+
+    const row = `
+      <tr>
+        <td>${V}</td>
+        <td>${R}</td>
+        <td>${I}</td>
+      </tr>
+    `;
+
+    document.getElementById("tableBody").innerHTML += row;
+
+    // clear inputs for next reading
+    document.getElementById("voltage").value = "";
+    document.getElementById("resistance").value = "";
   }
 </script>
 
