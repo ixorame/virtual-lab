@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab – Ohm's Law</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+  <title>Virtual Lab</title>
   <style>
     body {
       font-family: Arial;
@@ -41,7 +39,7 @@
 
 <body>
 
-<!-- ================= SCREEN 1 ================= -->
+<!-- SCREEN 1 -->
 <div id="screen1">
   <h2>Virtual Lab</h2>
 
@@ -54,29 +52,25 @@
   <button onclick="goNext()">Start Experiment</button>
 </div>
 
-<!-- ================= SCREEN 2 ================= -->
+<!-- SCREEN 2 -->
 <div id="screen2">
 
   <h2>Ohm's Law Experiment</h2>
 
-  <!-- THEORY -->
   <h3>Theory</h3>
   <p>
-    Ohm’s Law states that current through a conductor is directly proportional
-    to the voltage across it, provided temperature remains constant.
+    Ohm’s Law states that current is directly proportional to voltage
+    when temperature is constant.
   </p>
   <p><b>V = I × R</b></p>
 
-  <!-- PROCEDURE -->
   <h3>Procedure</h3>
   <ol>
     <li>Enter voltage and resistance values.</li>
     <li>Add readings to the table.</li>
-    <li>Plot the V–I graph.</li>
     <li>Observe current flow in simulation.</li>
   </ol>
 
-  <!-- INPUT -->
   <h3>Enter Values</h3>
 
   Voltage (V)<br>
@@ -87,7 +81,6 @@
 
   <button onclick="addReading()">Add Reading</button>
 
-  <!-- TABLE -->
   <h3>Observation Table</h3>
   <table>
     <thead>
@@ -100,31 +93,18 @@
     <tbody id="tableBody"></tbody>
   </table>
 
-  <!-- GRAPH -->
-  <button onclick="plotGraph()">Plot V–I Graph</button>
-  <canvas id="graph" width="400" height="250"></canvas>
-
-  <!-- SIMULATION -->
-  <h3>Simulation (Current Flow)</h3>
-
+  <h3>Simulation</h3>
   <svg width="400" height="120">
-    <!-- wire -->
     <rect x="20" y="55" width="360" height="10" fill="black"/>
-    <!-- battery -->
     <rect x="60" y="30" width="8" height="60" fill="black"/>
     <rect x="75" y="40" width="3" height="40" fill="black"/>
-    <!-- resistor -->
     <rect x="200" y="35" width="40" height="50" fill="#999"/>
-    <!-- electron -->
     <circle id="electron" cx="30" cy="60" r="5" fill="red"/>
   </svg>
 
 </div>
 
-<!-- ================= SCRIPT ================= -->
 <script>
-  let readings = [];
-  let chart = null;
   let pos = 30;
   let interval = null;
 
@@ -148,7 +128,6 @@
     }
 
     const I = (V / R).toFixed(3);
-    readings.push({ V, I });
 
     document.getElementById("tableBody").innerHTML +=
       <tr><td>${V}</td><td>${R}</td><td>${I}</td></tr>;
@@ -157,28 +136,6 @@
 
     document.getElementById("voltage").value = "";
     document.getElementById("resistance").value = "";
-  }
-
-  function plotGraph() {
-    if (readings.length === 0) {
-      alert("Add readings first");
-      return;
-    }
-
-    const ctx = document.getElementById("graph").getContext("2d");
-    if (chart) chart.destroy();
-
-    chart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: readings.map(r => r.V),
-        datasets: [{
-          label: "V–I Graph",
-          data: readings.map(r => r.I),
-          borderWidth: 2
-        }]
-      }
-    });
   }
 
   function startSimulation(current) {
