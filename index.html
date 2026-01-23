@@ -1,5 +1,32 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <title>Virtual Lab</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-top: 15px;
+      width: 100%;
+    }
+
+    th, td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: center;
+    }
+
+    #screen2 {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
 <body>
 
 <!-- ================= SCREEN 1 ================= -->
@@ -17,20 +44,22 @@
 
 <!-- ================= SCREEN 2 ================= -->
 <div id="screen2" style="display:none;">
+
   <h2 id="expTitle"></h2>
 
   <h3>Enter Values</h3>
 
-  Voltage (V):<br>
+  <label>Voltage (V)</label><br>
   <input type="number" id="voltage" step="0.1"><br><br>
 
-  Resistance (Ω):<br>
+  <label>Resistance (Ω)</label><br>
   <input type="number" id="resistance" step="0.1"><br><br>
 
   <button onclick="addReading()">Add Reading</button>
 
   <h3>Observation Table</h3>
-  <table border="1" cellpadding="5">
+
+  <table>
     <thead>
       <tr>
         <th>Voltage (V)</th>
@@ -38,11 +67,13 @@
         <th>Current (A)</th>
       </tr>
     </thead>
-    <tbody id="tableBody"></tbody>
+    <tbody id="tableBody">
+      <!-- rows will appear here -->
+    </tbody>
   </table>
+
 </div>
 
-<!-- ================= SCRIPT ================= -->
 <script>
   function goNext() {
     const exp = document.getElementById("experiment").value;
@@ -78,7 +109,6 @@
 
     document.getElementById("tableBody").innerHTML += row;
 
-    // clear inputs for next reading
     document.getElementById("voltage").value = "";
     document.getElementById("resistance").value = "";
   }
