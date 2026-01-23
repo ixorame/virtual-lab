@@ -129,6 +129,18 @@
 <script>
   let readings = [];
   let chart;
+  function startExperiment() {
+  const expSelect = document.getElementById("experiment");
+
+  if (!expSelect || expSelect.value === "") {
+    alert("Please select an experiment");
+    return;
+  }
+
+  document.getElementById("start").style.display = "none";
+  document.getElementById("lab").style.display = "block";
+  document.getElementById("labTitle").innerText = "Ohm's Law Experiment";
+}
 
   function startExperiment() {
     const exp = document.getElementById("experiment").value;
