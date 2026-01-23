@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Virtual Lab - Ohm's Law</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      text-align: center;
+      padding-top: 40px;
+    }
+
+    .lab-box {
+      background: white;
+      width: 300px;
+      margin: auto;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    input {
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="lab-box">
+    <h2>Ohm’s Law</h2>
+
+    <p>Voltage (V)</p>
+    <input type="range" id="voltage" min="0" max="20" value="0" oninput="calculate()">
+    <p id="vValue">0 V</p>
+
+    <p>Resistance (Ω)</p>
+    <input type="range" id="resistance" min="1" max="100" value="1" oninput="calculate()">
+    <p id="rValue">1 Ω</p>
+
+    <h3>Current (I)</h3>
+    <p id="current">0 A</p>
+  </div>
+
+  <script>
+    function calculate() {
+      let V = document.getElementById("voltage").value;
+      let R = document.getElementById("resistance").value;
+
+      document.getElementById("vValue").innerText = V + " V";
+      document.getElementById("rValue").innerText = R + " Ω";
+
+      let I = (V / R).toFixed(2);
+      document.getElementById("current").innerText = I + " A";
+    }
+  </script>
+
+</body>
+</html>
