@@ -3,6 +3,9 @@
 <head>
   <title>Virtual Lab</title>
 
+  <!-- Chart.js for graph -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body {
       font-family: Arial;
@@ -22,6 +25,15 @@
     }
 
     #screen2 {
+      margin-top: 20px;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 6px 10px;
+    }
+
+    canvas {
       margin-top: 20px;
     }
   </style>
@@ -47,18 +59,37 @@
 
   <h2 id="expTitle"></h2>
 
+  <!-- THEORY -->
+  <h3>Theory</h3>
+  <p>
+    Ohm’s Law states that the current flowing through a conductor is directly
+    proportional to the voltage across it, provided the temperature remains constant.
+  </p>
+  <p><b>V = I × R</b></p>
+
+  <!-- PROCEDURE -->
+  <h3>Procedure</h3>
+  <ol>
+    <li>Set a suitable resistance value.</li>
+    <li>Apply different voltage values.</li>
+    <li>Calculate the corresponding current.</li>
+    <li>Enter readings in the observation table.</li>
+    <li>Plot the V–I graph.</li>
+  </ol>
+
+  <!-- INPUT -->
   <h3>Enter Values</h3>
 
-  <label>Voltage (V)</label><br>
+  Voltage (V)<br>
   <input type="number" id="voltage" step="0.1"><br><br>
 
-  <label>Resistance (Ω)</label><br>
+  Resistance (Ω)<br>
   <input type="number" id="resistance" step="0.1"><br><br>
 
   <button onclick="addReading()">Add Reading</button>
 
+  <!-- TABLE -->
   <h3>Observation Table</h3>
-
   <table>
     <thead>
       <tr>
@@ -67,14 +98,20 @@
         <th>Current (A)</th>
       </tr>
     </thead>
-    <tbody id="tableBody">
-      <!-- rows will appear here -->
-    </tbody>
+    <tbody id="tableBody"></tbody>
   </table>
+
+  <!-- GRAPH -->
+  <button onclick="plotGraph()">Plot V–I Graph</button>
+
+  <canvas id="graph" width="400" height="300"></canvas>
 
 </div>
 
 <script>
+  let readings = [];
+  let chart = null;
+
   function goNext() {
     const exp = document.getElementById("experiment").value;
 
@@ -99,6 +136,8 @@
 
     const I = (V / R).toFixed(3);
 
+    readings.push({ V, I });
+
     const row = `
       <tr>
         <td>${V}</td>
@@ -106,11 +145,33 @@
         <td>${I}</td>
       </tr>
     `;
-
     document.getElementById("tableBody").innerHTML += row;
 
     document.getElementById("voltage").value = "";
     document.getElementById("resistance").value = "";
+  }
+
+  function plotGraph() {
+    if (readings.length === 0) {
+      alert("Add readings before plotting graph");
+      return;
+    }
+
+    const ctx = document.getElementById("graph").getContext("2d");
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: readings.map(r => r.V),
+        datasets: [{
+          label: "V–I Graph",
+          data: readings.map(r => r.I),
+          borderWidth: 2
+        }]
+      }
+    });
   }
 </script>
 
