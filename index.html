@@ -2,9 +2,139 @@
 <html>
 <body>
 
-<button onclick="document.body.innerHTML='NEXT SCREEN';">
-CLICK ME
-</button>
+<!-- ================= SCREEN 1 ================= -->
+<div id="screen1">
+  <h2>Virtual Lab</h2>
+
+  <select id="experiment">
+    <option value="">-- Select Experiment --</option>
+    <option value="ohm">Ohm's Law</option>
+  </select>
+  <br><br>
+
+  <button onclick="goNext()">Start</button>
+</div>
+
+<!-- ================= SCREEN 2 ================= -->
+<div id="screen2" style="display:none;">
+
+  <h2 id="title"></h2>
+
+  <h3>Enter Values</h3>
+
+  Voltage (V)<br>
+  <input type="number" id="voltage" step="0.1"><br><br>
+
+  Resistance (Ω)<br>
+  <input type="number" id="resistance" step="0.1"><br><br>
+
+  <button onclick="addReading()">Add Reading</button>
+
+  <h3>Observation Table</h3>
+
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Voltage (V)</th>
+        <th>Resistance (Ω)</th>
+        <th>Current (A)</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <br>
+  <button onclick="plotGraph()">Plot V–I Graph</button>
+
+  <h3>V–I Graph</h3>
+  <canvas id="graph" width="400" height="300" style="border:1px solid black;"></canvas>
+
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+  let readings = [];
+
+  function goNext() {
+    const exp = document.getElementById("experiment").value;
+
+    if (exp === "") {
+      alert("Select an experiment");
+      return;
+    }
+
+    document.getElementById("screen1").style.display = "none";
+    document.getElementById("screen2").style.display = "block";
+    document.getElementById("title").innerText = "Ohm's Law Experiment";
+  }
+
+  function addReading() {
+    const V = Number(document.getElementById("voltage").value);
+    const R = Number(document.getElementById("resistance").value);
+
+    if (V <= 0 || R <= 0) {
+      alert("Enter valid values");
+      return;
+    }
+
+    const I = (V / R).toFixed(3);
+    readings.push({ V, I });
+
+    const row = `
+      <tr>
+        <td>${V}</td>
+        <td>${R}</td>
+        <td>${I}</td>
+      </tr>
+    `;
+    document.getElementById("tableBody").innerHTML += row;
+
+    document.getElementById("voltage").value = "";
+    document.getElementById("resistance").value = "";
+  }
+
+  function plotGraph() {
+    if (readings.length === 0) {
+      alert("Add readings first");
+      return;
+    }
+
+    const canvas = document.getElementById("graph");
+    const ctx = canvas.getContext("2d");
+
+    // clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // axes
+    ctx.beginPath();
+    ctx.moveTo(40, 10);
+    ctx.lineTo(40, 260);
+    ctx.lineTo(380, 260);
+    ctx.stroke();
+
+    // labels
+    ctx.fillText("Voltage (V)", 170, 290);
+    ctx.save();
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText("Current (A)", -170, 15);
+    ctx.restore();
+
+    // scaling
+    let maxV = Math.max(...readings.map(r => r.V));
+    let maxI = Math.max(...readings.map(r => r.I));
+
+    // plot points
+    ctx.beginPath();
+    readings.forEach((r, index) => {
+      let x = 40 + (r.V / maxV) * 320;
+      let y = 260 - (r.I / maxI) * 240;
+
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+</script>
 
 </body>
 </html>
