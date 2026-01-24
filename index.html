@@ -2,20 +2,39 @@
 <html>
 <body>
 
+<!-- SCREEN 1 -->
 <div id="screen1">
   <h2>Virtual Lab</h2>
+
+  <label>Select Experiment:</label><br><br>
+  <select id="experiment">
+    <option value="">-- Select --</option>
+    <option value="Ohm's Law">Ohm's Law</option>
+    <option value="Series Resistance">Series Resistance</option>
+  </select>
+  <br><br>
+
   <button onclick="goNext()">Start</button>
 </div>
 
+<!-- SCREEN 2 -->
 <div id="screen2" style="display:none;">
-  <h2>Second Screen</h2>
+  <h2 id="expName"></h2>
   <p>You are now inside the lab.</p>
 </div>
 
 <script>
   function goNext() {
+    const exp = document.getElementById("experiment").value;
+
+    if (exp === "") {
+      alert("Please select an experiment");
+      return;
+    }
+
     document.getElementById("screen1").style.display = "none";
     document.getElementById("screen2").style.display = "block";
+    document.getElementById("expName").innerText = exp;
   }
 </script>
 
