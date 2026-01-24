@@ -3,32 +3,34 @@
 <head>
   <style>
     #palette {
-      width: 150px;
+      width: 180px;
       padding: 10px;
       border: 2px solid black;
       float: left;
     }
 
     #workspace {
-      margin-left: 170px;
-      width: 500px;
-      height: 300px;
+      margin-left: 200px;
+      width: 600px;
+      height: 350px;
       border: 2px dashed black;
       position: relative;
     }
 
     .component {
       padding: 8px;
-      margin: 5px;
+      margin: 6px 0;
       background-color: lightgray;
       cursor: grab;
       text-align: center;
+      font-weight: bold;
     }
 
     .placed {
       position: absolute;
       background-color: lightblue;
       padding: 8px;
+      border: 1px solid black;
       cursor: default;
     }
   </style>
@@ -40,8 +42,17 @@
 
 <!-- COMPONENT PALETTE -->
 <div id="palette">
-  <div class="component" draggable="true" ondragstart="drag(event)" id="battery">
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="battery">
     Battery
+  </div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="resistor">
+    Resistor
+  </div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="ammeter">
+    Ammeter
+  </div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="voltmeter">
+    Voltmeter
   </div>
 </div>
 
@@ -51,8 +62,11 @@
 </div>
 
 <script>
+  let componentCount = 0;
+
   function drag(ev) {
-    ev.dataTransfer.setData("componentId", ev.target.id);
+    ev.dataTransfer.setData("type", ev.target.dataset.type);
+    ev.dataTransfer.setData("label", ev.target.innerText);
   }
 
   function allowDrop(ev) {
@@ -62,17 +76,21 @@
   function drop(ev) {
     ev.preventDefault();
 
-    const id = ev.dataTransfer.getData("componentId");
-    const original = document.getElementById(id);
+    const type = ev.dataTransfer.getData("type");
+    const label = ev.dataTransfer.getData("label");
 
-    const clone = original.cloneNode(true);
-    clone.classList.remove("component");
-    clone.classList.add("placed");
-    clone.style.left = ev.offsetX + "px";
-    clone.style.top = ev.offsetY + "px";
-    clone.removeAttribute("draggable");
+    componentCount++;
 
-    ev.target.appendChild(clone);
+    const comp = document.createElement("div");
+    comp.className = "placed";
+    comp.innerText = label;
+    comp.dataset.type = type;
+    comp.dataset.id = type + componentCount;
+
+    comp.style.left = ev.offsetX + "px";
+    comp.style.top = ev.offsetY + "px";
+
+    ev.target.appendChild(comp);
   }
 </script>
 
