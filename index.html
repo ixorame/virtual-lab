@@ -1,191 +1,189 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <title>Virtual Lab</title>
   <style>
-    #palette {
-      width: 180px;
-      padding: 10px;
-      border: 2px solid black;
-      float: left;
-    }
+    body { font-family: Arial; background:#f4f6f8; }
+    .screen { display:none; padding:20px; }
+    .active { display:block; }
+
+    button { padding:8px 14px; margin-top:10px; }
 
     #workspace {
-      margin-left: 200px;
-      width: 600px;
-      height: 350px;
-      border: 2px dashed black;
-      position: relative;
+      width:500px;
+      height:200px;
+      border:2px dashed black;
+      position:relative;
+      margin-top:10px;
+      background:#fff;
     }
 
     .component {
-      padding: 8px;
-      margin: 6px 0;
-      background-color: lightgray;
-      cursor: grab;
-      text-align: center;
-      font-weight: bold;
+      display:inline-block;
+      padding:6px;
+      border:1px solid black;
+      margin:5px;
+      cursor:pointer;
+      background:#ddd;
     }
 
-    .placed {
-      position: absolute;
-      background-color: lightblue;
-      padding: 8px;
-      border: 2px solid black;
-      cursor: pointer;
-    }
-
-    .selected {
-      border: 2px solid red;
-    }
-
-    #status {
-      clear: both;
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid black;
-      width: 780px;
-    }
-
-    #result {
-      margin-top: 10px;
-      font-weight: bold;
-    }
+    table { border-collapse:collapse; margin-top:10px; }
+    th, td { border:1px solid black; padding:6px 10px; }
   </style>
 </head>
 
 <body>
 
-<h2>Drag & Drop Circuit Builder</h2>
+<h2 align="center">Virtual Laboratory</h2>
 
-<!-- COMPONENT PALETTE -->
-<div id="palette">
-  <div class="component" draggable="true" ondragstart="drag(event)" data-type="battery">Battery</div>
-  <div class="component" draggable="true" ondragstart="drag(event)" data-type="resistor">Resistor</div>
-  <div class="component" draggable="true" ondragstart="drag(event)" data-type="ammeter">Ammeter</div>
-  <div class="component" draggable="true" ondragstart="drag(event)" data-type="voltmeter">Voltmeter</div>
+<!-- SCREEN 1: SELECT EXPERIMENT -->
+<div class="screen active" id="screen1">
+  <h3>Select Experiment</h3>
+  <select id="experiment">
+    <option value="ohm">Ohm’s Law</option>
+  </select><br>
+  <button onclick="goToScreen(2)">Next</button>
 </div>
 
-<!-- WORKSPACE -->
-<div id="workspace" ondragover="allowDrop(event)" ondrop="drop(event)">
-  Drop components here
+<!-- SCREEN 2: THEORY & PROCEDURE -->
+<div class="screen" id="screen2">
+  <h3>Ohm’s Law</h3>
+
+  <h4>Theory</h4>
+  <p>
+    Ohm’s Law states that the current flowing through a conductor is directly
+    proportional to the voltage across it, provided temperature remains constant.
+    <br><br>
+    V = IR
+  </p>
+
+  <h4>Procedure</h4>
+  <ol>
+    <li>Connect battery, resistor, ammeter, and voltmeter correctly.</li>
+    <li>Set different voltage values.</li>
+    <li>Note corresponding current values.</li>
+    <li>Plot V–I graph.</li>
+  </ol>
+
+  <h4>Sample Graph</h4>
+  <canvas width="300" height="200" style="border:1px solid black;"></canvas>
+
+  <br>
+  <button onclick="goToScreen(3)">Proceed to Circuit</button>
 </div>
 
-<!-- STATUS -->
-<div id="status">
-  <h3>Placed Components</h3>
-  <ul id="componentList"></ul>
+<!-- SCREEN 3: CIRCUIT -->
+<div class="screen" id="screen3">
+  <h3>Make Circuit Connections</h3>
 
-  <h3>Connections</h3>
-  <ul id="connectionList"></ul>
+  <div>
+    <span class="component" onclick="add('battery')">Battery</span>
+    <span class="component" onclick="add('resistor')">Resistor</span>
+    <span class="component" onclick="add('ammeter')">Ammeter</span>
+    <span class="component" onclick="add('voltmeter')">Voltmeter</span>
+  </div>
 
+  <div id="workspace"></div>
+
+  <br>
   <button onclick="validateCircuit()">Validate Circuit</button>
-  <div id="result"></div>
+  <p id="circuitResult"></p>
+
+  <button id="nextBtn" style="display:none;" onclick="goToScreen(4)">Next</button>
+</div>
+
+<!-- SCREEN 4: OBSERVATION & GRAPH -->
+<div class="screen" id="screen4">
+  <h3>Observation Table</h3>
+
+  Voltage (V):
+  <input type="number" id="V">
+  Resistance (Ω):
+  <input type="number" id="R">
+  <button onclick="addRow()">Add</button>
+
+  <table>
+    <thead>
+      <tr><th>V</th><th>I</th></tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+
+  <br>
+  <button onclick="plotGraph()">Plot Graph</button>
+  <br><br>
+  <canvas id="graph" width="400" height="250" style="border:1px solid black;"></canvas>
 </div>
 
 <script>
-  let componentCount = 0;
-  let placedComponents = [];
-  let connections = [];
-  let selectedComponent = null;
+/* SCREEN CONTROL */
+function goToScreen(n) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("screen"+n).classList.add("active");
+}
 
-  function drag(ev) {
-    ev.dataTransfer.setData("type", ev.target.dataset.type);
-    ev.dataTransfer.setData("label", ev.target.innerText);
+/* CIRCUIT LOGIC */
+let components = [];
+
+function add(type) {
+  components.push(type);
+  const d = document.createElement("div");
+  d.innerText = type;
+  d.style.padding = "4px";
+  document.getElementById("workspace").appendChild(d);
+}
+
+function validateCircuit() {
+  const needed = ["battery","resistor","ammeter","voltmeter"];
+  const ok = needed.every(c => components.includes(c));
+
+  if (ok) {
+    circuitResult.innerText = "✔ Correct Circuit";
+    circuitResult.style.color = "green";
+    nextBtn.style.display = "inline-block";
+  } else {
+    circuitResult.innerText = "✖ Incorrect Circuit";
+    circuitResult.style.color = "red";
   }
+}
 
-  function allowDrop(ev) {
-    ev.preventDefault();
-  }
+/* OBSERVATION & GRAPH */
+let readings = [];
 
-  function drop(ev) {
-    ev.preventDefault();
+function addRow() {
+  const V = Number(document.getElementById("V").value);
+  const R = Number(document.getElementById("R").value);
+  if (V<=0 || R<=0) return;
 
-    const type = ev.dataTransfer.getData("type");
-    const label = ev.dataTransfer.getData("label");
+  const I = (V/R).toFixed(3);
+  readings.push({V,I});
 
-    componentCount++;
-    const id = type + componentCount;
+  tableBody.innerHTML += `<tr><td>${V}</td><td>${I}</td></tr>`;
+}
 
-    const comp = document.createElement("div");
-    comp.className = "placed";
-    comp.innerText = label;
-    comp.dataset.type = type;
-    comp.dataset.id = id;
+function plotGraph() {
+  const ctx = graph.getContext("2d");
+  ctx.clearRect(0,0,400,250);
 
-    comp.style.left = ev.offsetX + "px";
-    comp.style.top = ev.offsetY + "px";
+  ctx.beginPath();
+  ctx.moveTo(40,10);
+  ctx.lineTo(40,220);
+  ctx.lineTo(380,220);
+  ctx.stroke();
 
-    comp.onclick = () => selectComponent(comp);
+  if (readings.length === 0) return;
 
-    ev.target.appendChild(comp);
+  const maxV = Math.max(...readings.map(r=>r.V));
+  const maxI = Math.max(...readings.map(r=>r.I));
 
-    placedComponents.push({ id, type });
-    updateStatus();
-  }
-
-  function selectComponent(comp) {
-    if (!selectedComponent) {
-      selectedComponent = comp;
-      comp.classList.add("selected");
-    } else if (selectedComponent !== comp) {
-      // create connection
-      connections.push({
-        from: selectedComponent.dataset.id,
-        to: comp.dataset.id
-      });
-
-      selectedComponent.classList.remove("selected");
-      selectedComponent = null;
-
-      updateConnections();
-    }
-  }
-
-  function updateStatus() {
-    const list = document.getElementById("componentList");
-    list.innerHTML = "";
-
-    placedComponents.forEach(c => {
-      const li = document.createElement("li");
-      li.innerText = `${c.id} → ${c.type}`;
-      list.appendChild(li);
-    });
-
-    document.getElementById("result").innerText = "";
-  }
-
-  function updateConnections() {
-    const list = document.getElementById("connectionList");
-    list.innerHTML = "";
-
-    connections.forEach(c => {
-      const li = document.createElement("li");
-      li.innerText = `${c.from} ↔ ${c.to}`;
-      list.appendChild(li);
-    });
-  }
-
-  /* ===== Validation still only checks component rules ===== */
-
-  function validateCircuit() {
-    const counts = { battery:0, resistor:0, ammeter:0, voltmeter:0 };
-    placedComponents.forEach(c => counts[c.type]++);
-
-    if (counts.battery !== 1) return showError("Exactly one battery required");
-    if (counts.resistor !== 1) return showError("Exactly one resistor required");
-    if (counts.ammeter !== 1) return showError("Exactly one ammeter required");
-    if (counts.voltmeter > 1) return showError("At most one voltmeter allowed");
-
-    document.getElementById("result").innerText =
-      "✔ Component rules passed (connections recorded)";
-    document.getElementById("result").style.color = "green";
-  }
-
-  function showError(msg) {
-    const r = document.getElementById("result");
-    r.innerText = "✖ " + msg;
-    r.style.color = "red";
-  }
+  ctx.beginPath();
+  readings.forEach((r,i)=>{
+    const x = 40 + (r.V/maxV)*320;
+    const y = 220 - (r.I/maxI)*200;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+}
 </script>
 
 </body>
