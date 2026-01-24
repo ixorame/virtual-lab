@@ -1,169 +1,201 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab – Multiple Experiments</title>
+  <title>Virtual Lab – Ohm’s Law (Correct Instruments)</title>
   <style>
     body { font-family: Arial; }
-    #palette { width:180px; float:left; border:2px solid black; padding:10px; }
-    .component { background:#ddd; padding:6px; margin:6px 0; cursor:grab; font-weight:bold; text-align:center; }
-    #workspace { margin-left:200px; width:600px; height:260px; border:2px dashed black; position:relative; }
-    .placed { position:absolute; background:#bde; padding:6px; border:2px solid black; cursor:pointer; }
-    .selected { border-color:red; }
-    #panel { clear:both; margin-top:20px; border:1px solid black; padding:10px; width:850px; }
-    #experiment { opacity:0.4; pointer-events:none; margin-top:10px; }
+
+    #palette {
+      width: 200px;
+      border: 2px solid black;
+      padding: 10px;
+      float: left;
+    }
+
+    .component {
+      background: #ddd;
+      padding: 6px;
+      margin: 6px 0;
+      cursor: grab;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #workspace {
+      margin-left: 220px;
+      width: 600px;
+      height: 260px;
+      border: 2px dashed black;
+      position: relative;
+    }
+
+    .placed {
+      position: absolute;
+      background: #bde;
+      padding: 6px;
+      border: 2px solid black;
+      cursor: pointer;
+    }
+
+    .selected { border-color: red; }
+
+    #panel {
+      clear: both;
+      margin-top: 20px;
+      border: 1px solid black;
+      padding: 10px;
+      width: 860px;
+    }
+
+    #experiment {
+      opacity: 0.4;
+      pointer-events: none;
+      margin-top: 10px;
+    }
   </style>
 </head>
 
 <body>
 
-<h2>Virtual Lab – Electrical Experiments</h2>
-
-<label>Select Experiment:</label>
-<select id="experimentSelect" onchange="resetLab()">
-  <option value="ohm">Ohm’s Law</option>
-  <option value="series">Series Resistance</option>
-  <option value="parallel">Parallel Resistance</option>
-  <option value="power">Electrical Power</option>
-  <option value="kvl">Kirchhoff’s Voltage Law</option>
-</select>
-
-<br><br>
+<h2>Virtual Lab – Ohm’s Law</h2>
 
 <!-- PALETTE -->
 <div id="palette">
   <div class="component" draggable="true" ondragstart="drag(event)" data-type="battery">Battery</div>
-  <div class="component" draggable="true" ondragstart="drag(event)" data-type="ammeter">Ammeter</div>
   <div class="component" draggable="true" ondragstart="drag(event)" data-type="resistor">Resistor</div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="ammeter">Ammeter</div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="voltmeter">Voltmeter</div>
 </div>
 
 <!-- WORKSPACE -->
-<div id="workspace" ondragover="allowDrop(event)" ondrop="drop(event)">Drop components here</div>
+<div id="workspace" ondragover="allowDrop(event)" ondrop="drop(event)">
+  Drop components here
+</div>
 
 <div id="panel">
   <button onclick="validateCircuit()">Validate Circuit</button>
   <span id="result"></span>
 
+  <!-- EXPERIMENT -->
   <div id="experiment">
-    <h3 id="expTitle"></h3>
-    <div id="inputs"></div>
+    <h3>Ohm’s Law Experiment</h3>
+
+    Voltage (V):<br>
+    <input type="number" id="voltage"><br><br>
+
+    Resistance (Ω):<br>
+    <input type="number" id="resistance"><br><br>
 
     <button onclick="addReading()">Add Reading</button>
 
     <h4>Observation Table</h4>
     <table border="1">
-      <thead id="tableHead"></thead>
+      <thead>
+        <tr><th>V</th><th>R</th><th>I</th></tr>
+      </thead>
       <tbody id="tableBody"></tbody>
     </table>
   </div>
 </div>
 
 <script>
-/* ========== EXPERIMENT DEFINITIONS ========== */
-const experiments = {
-  ohm: {
-    title:"Ohm’s Law",
-    inputs:["V","R"],
-    table:["V","R","I"],
-    calc:v=>({I:(v.V/v.R).toFixed(3)})
-  },
-  series: {
-    title:"Series Resistance",
-    inputs:["R1","R2"],
-    table:["R1","R2","Req"],
-    calc:v=>({Req:(v.R1+v.R2).toFixed(2)})
-  },
-  parallel: {
-    title:"Parallel Resistance",
-    inputs:["R1","R2"],
-    table:["R1","R2","Req"],
-    calc:v=>({Req:(1/(1/v.R1+1/v.R2)).toFixed(2)})
-  },
-  power: {
-    title:"Electrical Power",
-    inputs:["V","I"],
-    table:["V","I","P"],
-    calc:v=>({P:(v.V*v.I).toFixed(2)})
-  },
-  kvl: {
-    title:"Kirchhoff’s Voltage Law",
-    inputs:["V1","V2"],
-    table:["V1","V2","V"],
-    calc:v=>({V:(Number(v.V1)+Number(v.V2)).toFixed(2)})
-  }
-};
-
 /* ========== STATE ========== */
-let placedComponents=[], connections=[], selected=null, componentCount=0;
-let readings=[], circuitValidated=false;
+let placedComponents = [];
+let connections = [];
+let selected = null;
+let componentCount = 0;
+let circuitValidated = false;
+let readings = [];
 
-/* ========== DRAG DROP ========== */
-function drag(e){e.dataTransfer.setData("type",e.target.dataset.type);}
-function allowDrop(e){e.preventDefault();}
-function drop(e){
-  e.preventDefault();
-  const t=e.dataTransfer.getData("type");
+/* ========== DRAG & DROP ========== */
+function drag(ev) {
+  ev.dataTransfer.setData("type", ev.target.dataset.type);
+}
+function allowDrop(ev) { ev.preventDefault(); }
+function drop(ev) {
+  ev.preventDefault();
+  const type = ev.dataTransfer.getData("type");
   componentCount++;
-  const d=document.createElement("div");
-  d.className="placed";
-  d.innerText=t;
-  d.dataset.id=t+componentCount;
-  d.dataset.type=t;
-  d.style.left=e.offsetX+"px";
-  d.style.top=e.offsetY+"px";
-  d.onclick=()=>select(d);
-  workspace.appendChild(d);
-  placedComponents.push({id:d.dataset.id,type:t});
-}
-function select(el){
-  if(!selected){selected=el;el.classList.add("selected");}
-  else{connections.push({from:selected.dataset.id,to:el.dataset.id});
-    selected.classList.remove("selected");selected=null;}
+
+  const el = document.createElement("div");
+  el.className = "placed";
+  el.innerText = type;
+  el.dataset.type = type;
+  el.dataset.id = type + componentCount;
+  el.style.left = ev.offsetX + "px";
+  el.style.top = ev.offsetY + "px";
+  el.onclick = () => select(el);
+
+  workspace.appendChild(el);
+  placedComponents.push({ id: el.dataset.id, type });
 }
 
-/* ========== VALIDATION (basic gate) ========== */
-function validateCircuit(){
-  if(placedComponents.length===0){
-    result.innerText="✖ Place components";
-    result.style.color="red"; return;
+/* ========== CONNECTION LOGIC ========== */
+function select(el) {
+  if (!selected) {
+    selected = el;
+    el.classList.add("selected");
+  } else {
+    connections.push({ from: selected.dataset.id, to: el.dataset.id });
+    selected.classList.remove("selected");
+    selected = null;
   }
-  circuitValidated=true;
-  result.innerText="✔ Circuit Accepted";
-  result.style.color="green";
+}
+
+/* ========== VALIDATION (CORRECT) ========== */
+function validateCircuit() {
+  const counts = { battery:0, resistor:0, ammeter:0, voltmeter:0 };
+
+  placedComponents.forEach(c => counts[c.type]++);
+
+  if (counts.battery !== 1)
+    return fail("Exactly ONE battery is required");
+
+  if (counts.resistor !== 1)
+    return fail("Exactly ONE resistor is required");
+
+  if (counts.ammeter !== 1)
+    return fail("Ammeter is mandatory to measure current");
+
+  if (counts.voltmeter !== 1)
+    return fail("Voltmeter is mandatory to measure voltage");
+
+  circuitValidated = true;
   unlockExperiment();
+  result.innerText = "✔ Correct circuit with proper instruments";
+  result.style.color = "green";
 }
 
-/* ========== EXPERIMENT ENGINE ========== */
-function unlockExperiment(){
-  experiment.style.opacity=1;
-  experiment.style.pointerEvents="auto";
-  setupExperiment();
-}
-function setupExperiment(){
-  const e=experiments[experimentSelect.value];
-  expTitle.innerText=e.title;
-  inputs.innerHTML=e.inputs.map(i=>`${i}:<br><input id="${i}" type="number"><br><br>`).join("");
-  tableHead.innerHTML="<tr>"+e.table.map(h=>`<th>${h}</th>`).join("")+"</tr>";
-  tableBody.innerHTML="";
-  readings=[];
-}
-function addReading(){
-  if(!circuitValidated)return;
-  const e=experiments[experimentSelect.value];
-  const vals={};
-  e.inputs.forEach(i=>vals[i]=Number(document.getElementById(i).value));
-  const out=e.calc(vals);
-  readings.push({...vals,...out});
-  tableBody.innerHTML+="<tr>"+e.table.map(k=>`<td>${vals[k]??out[k]}</td>`).join("")+"</tr>";
+function fail(msg) {
+  circuitValidated = false;
+  lockExperiment();
+  result.innerText = "✖ " + msg;
+  result.style.color = "red";
 }
 
-/* ========== RESET ========== */
-function resetLab(){
-  workspace.innerHTML="Drop components here";
-  placedComponents=[];connections=[];componentCount=0;
-  circuitValidated=false;
-  experiment.style.opacity=0.4;
-  experiment.style.pointerEvents="none";
-  result.innerText="";
+/* ========== EXPERIMENT GATE ========== */
+function unlockExperiment() {
+  experiment.style.opacity = "1";
+  experiment.style.pointerEvents = "auto";
+}
+function lockExperiment() {
+  experiment.style.opacity = "0.4";
+  experiment.style.pointerEvents = "none";
+}
+
+/* ========== EXPERIMENT LOGIC ========== */
+function addReading() {
+  if (!circuitValidated) return;
+
+  const V = Number(voltage.value);
+  const R = Number(resistance.value);
+  if (V <= 0 || R <= 0) return;
+
+  const I = (V / R).toFixed(3);
+  readings.push({ V, R, I });
+
+  tableBody.innerHTML +=
+    `<tr><td>${V}</td><td>${R}</td><td>${I}</td></tr>`;
 }
 </script>
 
