@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab – Ohm’s Law with Simulation</title>
+  <title>Virtual Lab – Component Values</title>
   <style>
     body { font-family: Arial; }
 
     #palette {
-      width: 220px;
+      width: 240px;
       border: 2px solid black;
       padding: 10px;
       float: left;
@@ -22,7 +22,7 @@
     }
 
     #workspace {
-      margin-left: 240px;
+      margin-left: 260px;
       width: 600px;
       height: 260px;
       border: 2px dashed black;
@@ -35,6 +35,7 @@
       padding: 6px;
       border: 2px solid black;
       cursor: pointer;
+      font-size: 13px;
     }
 
     .selected { border-color: red; }
@@ -44,7 +45,7 @@
       margin-top: 20px;
       border: 1px solid black;
       padding: 10px;
-      width: 880px;
+      width: 920px;
     }
 
     #experiment {
@@ -57,9 +58,9 @@
 
 <body>
 
-<h2>Virtual Lab – Ohm’s Law (Simulation Enabled)</h2>
+<h2>Virtual Lab – Ohm’s Law (Component Values)</h2>
 
-<!-- COMPONENT PALETTE -->
+<!-- PALETTE -->
 <div id="palette">
   <div class="component" draggable="true" ondragstart="drag(event)" data-type="battery">Battery</div>
   <div class="component" draggable="true" ondragstart="drag(event)" data-type="resistor">Resistor</div>
@@ -80,18 +81,12 @@
   <div id="experiment">
     <h3>Ohm’s Law Experiment</h3>
 
-    Voltage (V):<br>
-    <input type="number" id="voltage"><br><br>
-
-    Resistance (Ω):<br>
-    <input type="number" id="resistance"><br><br>
-
     <button onclick="addReading()">Add Reading</button>
 
     <h4>Observation Table</h4>
     <table border="1">
       <thead>
-        <tr><th>V</th><th>R</th><th>I</th></tr>
+        <tr><th>Voltage (V)</th><th>Resistance (Ω)</th><th>Current (A)</th></tr>
       </thead>
       <tbody id="tableBody"></tbody>
     </table>
@@ -123,26 +118,52 @@ function drop(ev) {
   const type = ev.dataTransfer.getData("type");
   componentCount++;
 
+  const comp = {
+    id: type + componentCount,
+    type: type,
+    value: null
+  };
+
   const el = document.createElement("div");
   el.className = "placed";
   el.innerText = type;
-  el.dataset.type = type;
-  el.dataset.id = type + componentCount;
+  el.dataset.id = comp.id;
+  el.onclick = () => componentClick(comp, el);
+
   el.style.left = ev.offsetX + "px";
   el.style.top = ev.offsetY + "px";
-  el.onclick = () => select(el);
 
   workspace.appendChild(el);
-  placedComponents.push({ id: el.dataset.id, type });
+  placedComponents.push(comp);
 }
 
-/* ===== CONNECTION LOGIC ===== */
-function select(el) {
+/* ===== COMPONENT VALUE SETTING ===== */
+function componentClick(comp, el) {
+  if (comp.type === "resistor") {
+    const v = prompt("Enter resistance in ohms (Ω):", comp.value ?? "");
+    if (v !== null && v > 0) {
+      comp.value = Number(v);
+      el.innerText = `Resistor (${comp.value} Ω)`;
+    }
+  }
+
+  if (comp.type === "battery") {
+    const v = prompt("Enter battery voltage (V):", comp.value ?? "");
+    if (v !== null && v > 0) {
+      comp.value = Number(v);
+      el.innerText = `Battery (${comp.value} V)`;
+    }
+  }
+
+  // selection for connection
   if (!selected) {
     selected = el;
     el.classList.add("selected");
-  } else {
-    connections.push({ from: selected.dataset.id, to: el.dataset.id });
+  } else if (selected !== el) {
+    connections.push({
+      from: selected.dataset.id,
+      to: el.dataset.id
+    });
     selected.classList.remove("selected");
     selected = null;
   }
@@ -151,20 +172,26 @@ function select(el) {
 /* ===== VALIDATION ===== */
 function validateCircuit() {
   const counts = { battery:0, resistor:0, ammeter:0, voltmeter:0 };
-  placedComponents.forEach(c => counts[c.type]++);
+  let battery = null;
+  let resistor = null;
 
-  if (counts.battery !== 1)
-    return fail("Exactly ONE battery required");
-  if (counts.resistor !== 1)
-    return fail("Exactly ONE resistor required");
-  if (counts.ammeter !== 1)
-    return fail("Ammeter is mandatory");
-  if (counts.voltmeter !== 1)
-    return fail("Voltmeter is mandatory");
+  placedComponents.forEach(c => {
+    counts[c.type]++;
+    if (c.type === "battery") battery = c;
+    if (c.type === "resistor") resistor = c;
+  });
+
+  if (counts.battery !== 1) return fail("Exactly one battery required");
+  if (counts.resistor !== 1) return fail("Exactly one resistor required");
+  if (counts.ammeter !== 1) return fail("Ammeter is mandatory");
+  if (counts.voltmeter !== 1) return fail("Voltmeter is mandatory");
+
+  if (!battery.value) return fail("Set battery voltage");
+  if (!resistor.value) return fail("Set resistor value");
 
   circuitValidated = true;
   unlockExperiment();
-  result.innerText = "✔ Circuit correct. Simulation enabled.";
+  result.innerText = "✔ Circuit and values are valid";
   result.style.color = "green";
 }
 
@@ -190,11 +217,13 @@ function lockExperiment() {
 function addReading() {
   if (!circuitValidated) return;
 
-  const V = Number(voltage.value);
-  const R = Number(resistance.value);
-  if (V <= 0 || R <= 0) return;
+  const battery = placedComponents.find(c => c.type === "battery");
+  const resistor = placedComponents.find(c => c.type === "resistor");
 
+  const V = battery.value;
+  const R = resistor.value;
   const I = (V / R).toFixed(3);
+
   readings.push({ V, R, I });
 
   tableBody.innerHTML +=
@@ -203,7 +232,7 @@ function addReading() {
   startSimulation(Number(I));
 }
 
-/* ===== SIMULATION (AMMETER-BASED) ===== */
+/* ===== SIMULATION ===== */
 function startSimulation(current) {
   const ctx = sim.getContext("2d");
   if (simInterval) clearInterval(simInterval);
@@ -213,7 +242,6 @@ function startSimulation(current) {
 
   simInterval = setInterval(() => {
     ctx.clearRect(0,0,400,80);
-
     ctx.fillStyle = "black";
     ctx.fillRect(10,35,380,8);
 
