@@ -6,55 +6,32 @@
 <div id="screen1">
   <h2>Virtual Lab</h2>
 
-  <select id="experiment">
+  <select id="experimentSelect">
     <option value="">-- Select Experiment --</option>
     <option value="ohm">Ohm's Law</option>
+    <option value="series">Series Resistance</option>
   </select>
   <br><br>
 
-  <button onclick="goNext()">Start</button>
+  <button onclick="startExperiment()">Start</button>
 </div>
 
 <!-- ================= SCREEN 2 ================= -->
 <div id="screen2" style="display:none;">
 
-  <h2 id="title"></h2>
+  <h2 id="expTitle"></h2>
 
   <!-- THEORY -->
   <h3>Theory</h3>
-  <p>
-    Ohm’s Law states that the current flowing through a conductor is directly
-    proportional to the voltage applied across it, provided the temperature
-    and other physical conditions remain constant.
-  </p>
-  <p>
-    Mathematically,
-    <br><b>V = I × R</b>
-    <br>where,
-    <br>V = Voltage (Volts)
-    <br>I = Current (Amperes)
-    <br>R = Resistance (Ohms)
-  </p>
+  <p id="theoryText"></p>
 
   <!-- PROCEDURE -->
   <h3>Procedure</h3>
-  <ol>
-    <li>Select the Ohm’s Law experiment.</li>
-    <li>Enter a suitable value of resistance.</li>
-    <li>Apply different voltage values.</li>
-    <li>Calculate the corresponding current.</li>
-    <li>Enter the readings into the observation table.</li>
-    <li>Plot the V–I graph using the readings.</li>
-  </ol>
+  <ol id="procedureList"></ol>
 
   <!-- INPUT -->
   <h3>Enter Values</h3>
-
-  Voltage (V)<br>
-  <input type="number" id="voltage" step="0.1"><br><br>
-
-  Resistance (Ω)<br>
-  <input type="number" id="resistance" step="0.1"><br><br>
+  <div id="inputArea"></div>
 
   <button onclick="addReading()">Add Reading</button>
 
@@ -62,104 +39,132 @@
   <h3>Observation Table</h3>
   <table border="1" cellpadding="6">
     <thead>
-      <tr>
-        <th>Voltage (V)</th>
-        <th>Resistance (Ω)</th>
-        <th>Current (A)</th>
-      </tr>
+      <tr id="tableHead"></tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
 
-  <br>
-  <button onclick="plotGraph()">Plot V–I Graph</button>
-
-  <!-- GRAPH -->
-  <h3>V–I Graph</h3>
-  <canvas id="graph" width="400" height="300" style="border:1px solid black;"></canvas>
-
 </div>
 
-<!-- ================= SCRIPT ================= -->
 <script>
-  let readings = [];
+/* ================= EXPERIMENT DEFINITIONS ================= */
 
-  function goNext() {
-    const exp = document.getElementById("experiment").value;
+const experiments = {
+  ohm: {
+    title: "Ohm's Law Experiment",
+    theory:
+      "Ohm’s Law states that the current flowing through a conductor is directly proportional to the voltage applied across it, provided physical conditions remain constant. Mathematically, V = I × R.",
+    procedure: [
+      "Connect the resistor in the circuit.",
+      "Apply a known voltage across the resistor.",
+      "Measure the voltage and resistance values.",
+      "Calculate the current using Ohm’s Law."
+    ],
+    inputs: ["V", "R"],
+    output: "I",
+    formula: (V, R) => V / R
+  },
 
-    if (exp === "") {
-      alert("Select an experiment");
-      return;
-    }
+  series: {
+    title: "Series Resistance Experiment",
+    theory:
+      "When resistors are connected in series, the equivalent resistance is equal to the sum of the individual resistances. Mathematically, Req = R₁ + R₂.",
+    procedure: [
+      "Connect two resistors in series.",
+      "Measure the resistance values R₁ and R₂.",
+      "Add the resistance values to obtain equivalent resistance."
+    ],
+    inputs: ["R1", "R2"],
+    output: "Req",
+    formula: (R1, R2) => R1 + R2
+  }
+};
 
-    document.getElementById("screen1").style.display = "none";
-    document.getElementById("screen2").style.display = "block";
-    document.getElementById("title").innerText = "Ohm's Law Experiment";
+let currentExperiment = null;
+
+/* ================= START EXPERIMENT ================= */
+
+function startExperiment() {
+  const key = document.getElementById("experimentSelect").value;
+
+  if (!key) {
+    alert("Select an experiment");
+    return;
   }
 
-  function addReading() {
-    const V = Number(document.getElementById("voltage").value);
-    const R = Number(document.getElementById("resistance").value);
+  currentExperiment = experiments[key];
 
-    if (V <= 0 || R <= 0) {
+  document.getElementById("screen1").style.display = "none";
+  document.getElementById("screen2").style.display = "block";
+
+  setupUI();
+}
+
+/* ================= SETUP UI ================= */
+
+function setupUI() {
+  // Title
+  document.getElementById("expTitle").innerText = currentExperiment.title;
+
+  // Theory
+  document.getElementById("theoryText").innerText = currentExperiment.theory;
+
+  // Procedure
+  let procHTML = "";
+  currentExperiment.procedure.forEach(step => {
+    procHTML += <li>${step}</li>;
+  });
+  document.getElementById("procedureList").innerHTML = procHTML;
+
+  // Inputs
+  let inputHTML = "";
+  currentExperiment.inputs.forEach(name => {
+    inputHTML += `
+      ${name}:<br>
+      <input type="number" id="${name}" step="0.1"><br><br>
+    `;
+  });
+  document.getElementById("inputArea").innerHTML = inputHTML;
+
+  // Table head
+  let headHTML = "";
+  currentExperiment.inputs.forEach(name => {
+    headHTML += <th>${name}</th>;
+  });
+  headHTML += <th>${currentExperiment.output}</th>;
+
+  document.getElementById("tableHead").innerHTML = headHTML;
+  document.getElementById("tableBody").innerHTML = "";
+}
+
+/* ================= ADD READING ================= */
+
+function addReading() {
+  let values = [];
+
+  for (let name of currentExperiment.inputs) {
+    const val = Number(document.getElementById(name).value);
+    if (val <= 0) {
       alert("Enter valid values");
       return;
     }
-
-    const I = (V / R).toFixed(3);
-    readings.push({ V, I });
-
-    const row = `
-      <tr>
-        <td>${V}</td>
-        <td>${R}</td>
-        <td>${I}</td>
-      </tr>
-    `;
-    document.getElementById("tableBody").innerHTML += row;
-
-    document.getElementById("voltage").value = "";
-    document.getElementById("resistance").value = "";
+    values.push(val);
   }
 
-  function plotGraph() {
-    if (readings.length === 0) {
-      alert("Add readings first");
-      return;
-    }
+  const result = currentExperiment.formula(...values).toFixed(3);
 
-    const canvas = document.getElementById("graph");
-    const ctx = canvas.getContext("2d");
+  let row = "<tr>";
+  values.forEach(v => row += <td>${v}</td>);
+  row += <td>${result}</td></tr>;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById("tableBody").innerHTML += row;
 
-    // Axes
-    ctx.beginPath();
-    ctx.moveTo(40, 10);
-    ctx.lineTo(40, 260);
-    ctx.lineTo(380, 260);
-    ctx.stroke();
-
-    // Labels
-    ctx.fillText("Voltage (V)", 170, 290);
-    ctx.save();
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Current (A)", -170, 15);
-    ctx.restore();
-
-    let maxV = Math.max(...readings.map(r => r.V));
-    let maxI = Math.max(...readings.map(r => r.I));
-
-    ctx.beginPath();
-    readings.forEach((r, i) => {
-      let x = 40 + (r.V / maxV) * 320;
-      let y = 260 - (r.I / maxI) * 240;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-  }
+  // clear inputs
+  currentExperiment.inputs.forEach(name => {
+    document.getElementById(name).value = "";
+  });
+}
 </script>
 
 </body>
-</html>>
+</html>
