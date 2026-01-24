@@ -1,24 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab</title>
+  <title>Virtual Lab with Wiring</title>
   <style>
     body { font-family: Arial; background:#f4f6f8; }
     .screen { display:none; padding:20px; }
     .active { display:block; }
     button { padding:8px 14px; margin-top:10px; }
+
     #workspace {
-      width:500px; height:200px;
+      width:600px;
+      height:260px;
       border:2px dashed black;
-      background:#fff; margin-top:10px;
+      position:relative;
+      background:#fff;
     }
+
     .component {
-      display:inline-block; padding:6px;
-      border:1px solid black; margin:5px;
-      background:#ddd; cursor:pointer;
+      position:absolute;
+      padding:6px;
+      border:2px solid #333;
+      background:#ddd;
+      cursor:pointer;
+      user-select:none;
     }
-    table { border-collapse:collapse; margin-top:10px; }
-    th, td { border:1px solid black; padding:6px 10px; }
+
+    .selected { border-color:red; }
+
+    canvas { position:absolute; left:0; top:0; pointer-events:none; }
   </style>
 </head>
 
@@ -31,26 +40,21 @@
   <h3>Select Experiment</h3>
   <select id="experimentSelect">
     <option value="ohm">Ohm’s Law</option>
-    <option value="series">Series Resistance</option>
-    <option value="power">Electrical Power</option>
   </select><br>
   <button onclick="goToScreen(2)">Next</button>
 </div>
 
 <!-- SCREEN 2 -->
 <div class="screen" id="screen2">
-  <h3 id="expTitle"></h3>
-
+  <h3>Ohm’s Law</h3>
   <h4>Theory</h4>
-  <p id="theory"></p>
-
+  <p>V = IR</p>
   <h4>Procedure</h4>
-  <ol id="procedure"></ol>
-
-  <h4>Sample Graph</h4>
-  <canvas width="300" height="200" style="border:1px solid black;"></canvas>
-
-  <br>
+  <ol>
+    <li>Connect battery, ammeter, resistor in series</li>
+    <li>Connect voltmeter across resistor</li>
+    <li>Validate circuit</li>
+  </ol>
   <button onclick="goToScreen(3)">Proceed to Circuit</button>
 </div>
 
@@ -58,8 +62,16 @@
 <div class="screen" id="screen3">
   <h3>Make Circuit Connections</h3>
 
-  <div id="components"></div>
-  <div id="workspace"></div>
+  <button onclick="addComponent('battery')">Battery</button>
+  <button onclick="addComponent('ammeter')">Ammeter</button>
+  <button onclick="addComponent('resistor')">Resistor</button>
+  <button onclick="addComponent('voltmeter')">Voltmeter</button>
+
+  <br><br>
+
+  <div id="workspace">
+    <canvas id="wires" width="600" height="260"></canvas>
+  </div>
 
   <br>
   <button onclick="validateCircuit()">Validate Circuit</button>
@@ -70,143 +82,111 @@
 
 <!-- SCREEN 4 -->
 <div class="screen" id="screen4">
-  <h3>Observation Table</h3>
+  <h3>Observation & Graph</h3>
 
-  <div id="inputs"></div>
+  Voltage (V):
+  <input id="V" type="number">
+  Resistance (Ω):
+  <input id="R" type="number">
   <button onclick="addRow()">Add</button>
 
-  <table>
-    <thead id="tableHead"></thead>
+  <table border="1">
+    <thead>
+      <tr><th>V</th><th>I</th></tr>
+    </thead>
     <tbody id="tableBody"></tbody>
   </table>
 
   <br>
-  <button onclick="plotGraph()">Plot Graph</button>
-  <br><br>
+  <button onclick="plotGraph()">Plot Graph</button><br><br>
   <canvas id="graph" width="400" height="250" style="border:1px solid black;"></canvas>
 </div>
 
 <script>
-/* ===== EXPERIMENT DATA ===== */
-const experiments = {
-  ohm: {
-    title: "Ohm’s Law",
-    theory: "Ohm’s Law states that V = IR.",
-    procedure: [
-      "Connect battery, resistor, ammeter, voltmeter",
-      "Vary voltage",
-      "Note current",
-      "Plot V–I graph"
-    ],
-    components: ["battery","resistor","ammeter","voltmeter"],
-    inputs: ["V","R"],
-    table: ["V","I"],
-    calculate: v => ({ I:(v.V/v.R).toFixed(3) }),
-    graphX:"V", graphY:"I"
-  },
-  series: {
-    title: "Series Resistance",
-    theory: "Total resistance in series is sum of resistances.",
-    procedure: [
-      "Connect two resistors in series",
-      "Note R₁ and R₂",
-      "Calculate equivalent resistance"
-    ],
-    components: ["battery","resistor","resistor"],
-    inputs: ["R1","R2"],
-    table: ["R1","R2","Req"],
-    calculate: v => ({ Req:(v.R1+v.R2).toFixed(2) }),
-    graphX:null
-  },
-  power: {
-    title: "Electrical Power",
-    theory: "Electrical power is given by P = VI.",
-    procedure: [
-      "Connect battery and resistor",
-      "Measure voltage and current",
-      "Calculate power"
-    ],
-    components: ["battery","resistor","ammeter","voltmeter"],
-    inputs: ["V","R"],
-    table: ["V","I","P"],
-    calculate: v => {
-      const I=v.V/v.R;
-      return { I:I.toFixed(3), P:(v.V*I).toFixed(2) };
-    },
-    graphX:"V", graphY:"P"
-  }
-};
-
 /* ===== SCREEN CONTROL ===== */
 function goToScreen(n){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.getElementById("screen"+n).classList.add("active");
-  if(n===2) loadTheory();
-  if(n===3) loadComponents();
-  if(n===4) loadTable();
 }
 
-/* ===== LOAD THEORY ===== */
-function loadTheory(){
-  const e=experiments[experimentSelect.value];
-  expTitle.innerText=e.title;
-  theory.innerText=e.theory;
-  procedure.innerHTML=e.procedure.map(p=>`<li>${p}</li>`).join("");
+/* ===== CIRCUIT & WIRING ===== */
+let components = [];
+let connections = [];
+let selected = null;
+let idCount = 0;
+
+function addComponent(type){
+  const el = document.createElement("div");
+  el.className = "component";
+  el.innerText = type;
+  el.dataset.id = type + (++idCount);
+  el.dataset.type = type;
+  el.style.left = Math.random()*500 + "px";
+  el.style.top = Math.random()*200 + "px";
+  el.onclick = () => selectComponent(el);
+
+  workspace.appendChild(el);
+  components.push(el);
 }
 
-/* ===== CIRCUIT ===== */
-let placed=[];
-function loadComponents(){
-  placed=[];
-  workspace.innerHTML="";
-  nextBtn.style.display="none";
-  circuitResult.innerText="";
-  components.innerHTML=experiments[experimentSelect.value]
-    .components.map(c=>`<span class="component" onclick="add('${c}')">${c}</span>`).join("");
+function selectComponent(el){
+  if(!selected){
+    selected = el;
+    el.classList.add("selected");
+  } else if(selected !== el){
+    connections.push([selected, el]);
+    selected.classList.remove("selected");
+    selected = null;
+    drawWires();
+  }
 }
-function add(c){
-  placed.push(c);
-  workspace.innerHTML+=`<div>${c}</div>`;
+
+function drawWires(){
+  const c = wires.getContext("2d");
+  c.clearRect(0,0,600,260);
+  connections.forEach(pair=>{
+    const a = pair[0].getBoundingClientRect();
+    const b = pair[1].getBoundingClientRect();
+    const wa = workspace.getBoundingClientRect();
+    c.beginPath();
+    c.moveTo(a.left-wa.left+20, a.top-wa.top+10);
+    c.lineTo(b.left-wa.left+20, b.top-wa.top+10);
+    c.stroke();
+  });
 }
+
+/* ===== VALIDATION ===== */
 function validateCircuit(){
-  const req=experiments[experimentSelect.value].components;
-  const ok=req.every(r=>placed.includes(r));
-  circuitResult.innerText=ok?"✔ Correct Circuit":"✖ Incorrect Circuit";
-  circuitResult.style.color=ok?"green":"red";
+  const types = components.map(c=>c.dataset.type);
+  const needed = ["battery","ammeter","resistor","voltmeter"];
+  const ok = needed.every(t=>types.includes(t)) && connections.length >= 3;
+
+  circuitResult.innerText = ok ? "✔ Correct wiring" : "✖ Incorrect wiring";
+  circuitResult.style.color = ok ? "green" : "red";
   if(ok) nextBtn.style.display="inline-block";
 }
 
-/* ===== OBSERVATION ===== */
+/* ===== OBSERVATION & GRAPH ===== */
 let readings=[];
-function loadTable(){
-  readings=[];
-  const e=experiments[experimentSelect.value];
-  inputs.innerHTML=e.inputs.map(i=>`${i}: <input id="${i}"><br>`).join("");
-  tableHead.innerHTML="<tr>"+e.table.map(h=>`<th>${h}</th>`).join("")+"</tr>";
-  tableBody.innerHTML="";
-}
 function addRow(){
-  const e=experiments[experimentSelect.value];
-  const vals={};
-  e.inputs.forEach(i=>vals[i]=Number(document.getElementById(i).value));
-  const out=e.calculate(vals);
-  readings.push({...vals,...out});
-  tableBody.innerHTML+="<tr>"+e.table.map(k=>`<td>${vals[k]??out[k]}</td>`).join("")+"</tr>";
+  const V=Number(document.getElementById("V").value);
+  const R=Number(document.getElementById("R").value);
+  if(V<=0||R<=0)return;
+  const I=(V/R).toFixed(3);
+  readings.push({V,I});
+  tableBody.innerHTML+=`<tr><td>${V}</td><td>${I}</td></tr>`;
 }
 
-/* ===== GRAPH ===== */
 function plotGraph(){
-  const e=experiments[experimentSelect.value];
-  if(!e.graphX) return;
   const ctx=graph.getContext("2d");
   ctx.clearRect(0,0,400,250);
   ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,220); ctx.lineTo(380,220); ctx.stroke();
-  const maxX=Math.max(...readings.map(r=>r[e.graphX]));
-  const maxY=Math.max(...readings.map(r=>r[e.graphY]));
+  const maxV=Math.max(...readings.map(r=>r.V));
+  const maxI=Math.max(...readings.map(r=>r.I));
   ctx.beginPath();
   readings.forEach((r,i)=>{
-    const x=40+(r[e.graphX]/maxX)*320;
-    const y=220-(r[e.graphY]/maxY)*200;
+    const x=40+(r.V/maxV)*320;
+    const y=220-(r.I/maxI)*200;
     i?ctx.lineTo(x,y):ctx.moveTo(x,y);
   });
   ctx.stroke();
