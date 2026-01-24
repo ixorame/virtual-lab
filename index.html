@@ -5,71 +5,81 @@
 
   <style>
     body {
-      font-family: Arial;
       margin: 0;
+      font-family: Arial, sans-serif;
       background: #f4f6f8;
     }
 
     h2 {
       text-align: center;
-      margin-top: 20px;
+      margin: 20px 0;
     }
 
     /* ---------- SCREEN SYSTEM ---------- */
     .screen {
       display: none;
-      padding: 20px;
       min-height: 100vh;
+      padding: 30px;
       box-sizing: border-box;
+      animation: fade 0.4s ease;
     }
 
     .active {
       display: block;
     }
 
-    button {
-      padding: 8px 14px;
-      margin-top: 10px;
-      cursor: pointer;
+    @keyframes fade {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
 
-    /* ---------- SCREEN 1 BACKGROUND ONLY ---------- */
+    button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 4px;
+      background: #1976d2;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #125aa0;
+    }
+
+    /* ---------- SCREEN 1 ---------- */
     #screen1 {
-      background: #dff5df; /* light green */
+      background: #dff5df;
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
-    .select-panel {
+    #screen1.active {
+      display: flex;
+    }
+
+    .card {
       background: white;
       padding: 30px 40px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       width: 320px;
+      border-radius: 8px;
       text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
     select {
       width: 100%;
-      padding: 6px;
-      margin-top: 10px;
+      padding: 8px;
+      margin: 15px 0;
     }
 
-    /* ---------- OBSERVATION + GRAPH ---------- */
+    /* ---------- OBSERVATION ---------- */
     .obs-container {
       display: flex;
       gap: 40px;
-      align-items: flex-start;
       margin-top: 20px;
-    }
-
-    .obs-left {
-      width: 300px;
-    }
-
-    .obs-right {
-      width: 450px;
     }
 
     table {
@@ -90,55 +100,46 @@
 <h2>Virtual Laboratory</h2>
 
 <!-- SCREEN 1 -->
-<div class="screen active" id="screen1">
-  <div class="select-panel">
+<div id="screen1" class="screen active">
+  <div class="card">
     <h3>Select Experiment</h3>
-
-    <select id="experimentSelect">
-      <option value="ohm">Ohm’s Law</option>
+    <select>
+      <option>Ohm’s Law</option>
     </select>
-
-    <br><br>
-    <button onclick="goToScreen(2)">Next</button>
+    <button onclick="goTo(2)">Next</button>
   </div>
 </div>
 
 <!-- SCREEN 2 -->
-<div class="screen" id="screen2">
+<div id="screen2" class="screen">
   <h3>Ohm’s Law</h3>
 
   <h4>Theory</h4>
   <p>
-    Ohm’s Law states that the current flowing through a conductor
-    is directly proportional to the voltage across it,
-    provided temperature remains constant.
+    Ohm’s Law states that the current through a conductor is directly
+    proportional to the voltage across it.
     <br><br>
     <b>V = IR</b>
   </p>
 
   <h4>Procedure</h4>
   <ol>
-    <li>Connect battery, resistor, ammeter, and voltmeter.</li>
-    <li>Apply different voltage values.</li>
-    <li>Measure corresponding current values.</li>
+    <li>Connect the circuit components.</li>
+    <li>Apply different voltages.</li>
+    <li>Measure current values.</li>
     <li>Plot the V–I graph.</li>
   </ol>
 
-  <h4>Sample Graph</h4>
-  <canvas width="300" height="200" style="border:1px solid black;"></canvas>
-
-  <br>
-  <button onclick="goToScreen(3)">Proceed to Observations</button>
+  <button onclick="goTo(3)">Proceed</button>
 </div>
 
 <!-- SCREEN 3 -->
-<div class="screen" id="screen3">
+<div id="screen3" class="screen">
   <h3>Observation & Graph</h3>
 
   <div class="obs-container">
 
-    <!-- OBSERVATION -->
-    <div class="obs-left">
+    <div>
       Voltage (V):<br>
       <input id="V" type="number"><br><br>
 
@@ -155,8 +156,7 @@
       </table>
     </div>
 
-    <!-- GRAPH -->
-    <div class="obs-right">
+    <div>
       <button onclick="plotGraph()">Plot Graph</button><br><br>
       <canvas id="graph" width="400" height="250"
               style="border:1px solid black;"></canvas>
@@ -166,13 +166,13 @@
 </div>
 
 <script>
-/* ---------- SCREEN CONTROL ---------- */
-function goToScreen(n) {
-  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-  document.getElementById("screen" + n).classList.add("active");
+/* ---------- NAVIGATION ---------- */
+function goTo(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen' + n).classList.add('active');
 }
 
-/* ---------- OBSERVATION & GRAPH ---------- */
+/* ---------- OBSERVATION ---------- */
 let readings = [];
 
 function addRow() {
