@@ -33,6 +33,14 @@
       border: 1px solid black;
       cursor: default;
     }
+
+    #status {
+      clear: both;
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid black;
+      width: 780px;
+    }
   </style>
 </head>
 
@@ -61,8 +69,15 @@
   Drop components here
 </div>
 
+<!-- STATUS PANEL -->
+<div id="status">
+  <h3>Placed Components (Internal State)</h3>
+  <ul id="componentList"></ul>
+</div>
+
 <script>
   let componentCount = 0;
+  let placedComponents = [];
 
   function drag(ev) {
     ev.dataTransfer.setData("type", ev.target.dataset.type);
@@ -81,16 +96,40 @@
 
     componentCount++;
 
+    const id = type + componentCount;
+
+    // Visual element
     const comp = document.createElement("div");
     comp.className = "placed";
     comp.innerText = label;
     comp.dataset.type = type;
-    comp.dataset.id = type + componentCount;
+    comp.dataset.id = id;
 
     comp.style.left = ev.offsetX + "px";
     comp.style.top = ev.offsetY + "px";
 
     ev.target.appendChild(comp);
+
+    // Logical model (IMPORTANT)
+    placedComponents.push({
+      id: id,
+      type: type,
+      x: ev.offsetX,
+      y: ev.offsetY
+    });
+
+    updateStatus();
+  }
+
+  function updateStatus() {
+    const list = document.getElementById("componentList");
+    list.innerHTML = "";
+
+    placedComponents.forEach(c => {
+      const li = document.createElement("li");
+      li.innerText = `${c.id} → ${c.type}`;
+      list.appendChild(li);
+    });
   }
 </script>
 
