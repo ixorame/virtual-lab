@@ -26,15 +26,15 @@
   <h3>Theory</h3>
   <p>
     This experiment demonstrates the relationship between electrical quantities.
-    The governing principle explains how input parameters affect the output.
+    For Ohm’s Law, current depends on applied voltage and resistance.
   </p>
 
   <!-- PROCEDURE -->
   <h3>Procedure</h3>
   <ol>
     <li>Select the experiment.</li>
-    <li>Enter the required input values.</li>
-    <li>Observe the output.</li>
+    <li>Enter voltage and resistance.</li>
+    <li>Click Add Reading to calculate current.</li>
   </ol>
 
   <!-- INPUT SECTION -->
@@ -46,7 +46,11 @@
   <label>Resistance (Ω):</label><br>
   <input type="number" id="resistance"><br><br>
 
-  <button>Add Reading</button>
+  <button onclick="addReading()">Add Reading</button>
+
+  <!-- OUTPUT -->
+  <h3>Output</h3>
+  <p id="outputText">No reading added yet.</p>
 
 </div>
 
@@ -62,6 +66,22 @@
     document.getElementById("screen1").style.display = "none";
     document.getElementById("screen2").style.display = "block";
     document.getElementById("expName").innerText = exp;
+  }
+
+  function addReading() {
+    const V = Number(document.getElementById("voltage").value);
+    const R = Number(document.getElementById("resistance").value);
+
+    if (V <= 0 || R <= 0) {
+      alert("Please enter valid Voltage and Resistance values");
+      return;
+    }
+
+    // Ohm's Law calculation
+    const I = (V / R).toFixed(3);
+
+    document.getElementById("outputText").innerText =
+      "Calculated Current (I) = " + I + " A";
   }
 </script>
 
