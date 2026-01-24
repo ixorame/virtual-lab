@@ -1,60 +1,135 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab with Wiring</title>
-  <style>
-    body { font-family: Arial; background:#f4f6f8; }
-    .screen { display:none; padding:20px; }
-    .active { display:block; }
-    button { padding:8px 14px; margin-top:10px; }
+  <title>Virtual Laboratory</title>
 
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    h2 {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .screen {
+      display: none;
+      padding: 20px;
+    }
+
+    .active {
+      display: block;
+    }
+
+    button {
+      padding: 8px 14px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    /* CIRCUIT AREA */
     #workspace {
-      width:600px;
-      height:260px;
-      border:2px dashed black;
-      position:relative;
-      background:#fff;
+      width: 600px;
+      height: 260px;
+      border: 2px dashed black;
+      position: relative;
+      background: white;
+      margin-top: 10px;
     }
 
     .component {
-      position:absolute;
-      padding:6px;
-      border:2px solid #333;
-      background:#ddd;
-      cursor:pointer;
-      user-select:none;
+      position: absolute;
+      padding: 6px;
+      border: 2px solid black;
+      background: #ddd;
+      cursor: pointer;
+      user-select: none;
     }
 
-    .selected { border-color:red; }
+    .selected {
+      border-color: red;
+    }
 
-    canvas { position:absolute; left:0; top:0; pointer-events:none; }
+    canvas.wires {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    /* OBSERVATION + GRAPH */
+    .obs-container {
+      display: flex;
+      gap: 40px;
+      align-items: flex-start;
+      margin-top: 20px;
+    }
+
+    .obs-left {
+      width: 300px;
+    }
+
+    .obs-right {
+      width: 450px;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid black;
+      padding: 6px 10px;
+      text-align: center;
+    }
   </style>
 </head>
 
 <body>
 
-<h2 align="center">Virtual Laboratory</h2>
+<h2>Virtual Laboratory</h2>
 
 <!-- SCREEN 1 -->
 <div class="screen active" id="screen1">
   <h3>Select Experiment</h3>
+
   <select id="experimentSelect">
     <option value="ohm">Ohm’s Law</option>
-  </select><br>
+  </select>
+
+  <br>
   <button onclick="goToScreen(2)">Next</button>
 </div>
 
 <!-- SCREEN 2 -->
 <div class="screen" id="screen2">
   <h3>Ohm’s Law</h3>
+
   <h4>Theory</h4>
-  <p>V = IR</p>
+  <p>
+    Ohm’s Law states that the current through a conductor is directly
+    proportional to the voltage across it.
+    <br><br>
+    <b>V = IR</b>
+  </p>
+
   <h4>Procedure</h4>
   <ol>
-    <li>Connect battery, ammeter, resistor in series</li>
-    <li>Connect voltmeter across resistor</li>
-    <li>Validate circuit</li>
+    <li>Connect battery, ammeter, resistor, and voltmeter.</li>
+    <li>Set different voltage values.</li>
+    <li>Note corresponding current values.</li>
+    <li>Plot the V–I graph.</li>
   </ol>
+
+  <h4>Sample Graph</h4>
+  <canvas width="300" height="200" style="border:1px solid black;"></canvas>
+
+  <br>
   <button onclick="goToScreen(3)">Proceed to Circuit</button>
 </div>
 
@@ -67,10 +142,8 @@
   <button onclick="addComponent('resistor')">Resistor</button>
   <button onclick="addComponent('voltmeter')">Voltmeter</button>
 
-  <br><br>
-
   <div id="workspace">
-    <canvas id="wires" width="600" height="260"></canvas>
+    <canvas id="wireCanvas" class="wires" width="600" height="260"></canvas>
   </div>
 
   <br>
@@ -84,56 +157,69 @@
 <div class="screen" id="screen4">
   <h3>Observation & Graph</h3>
 
-  Voltage (V):
-  <input id="V" type="number">
-  Resistance (Ω):
-  <input id="R" type="number">
-  <button onclick="addRow()">Add</button>
+  <div class="obs-container">
 
-  <table border="1">
-    <thead>
-      <tr><th>V</th><th>I</th></tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+    <!-- OBSERVATION -->
+    <div class="obs-left">
+      Voltage (V):<br>
+      <input id="V" type="number"><br><br>
 
-  <br>
-  <button onclick="plotGraph()">Plot Graph</button><br><br>
-  <canvas id="graph" width="400" height="250" style="border:1px solid black;"></canvas>
+      Resistance (Ω):<br>
+      <input id="R" type="number"><br><br>
+
+      <button onclick="addRow()">Add</button>
+
+      <table>
+        <thead>
+          <tr><th>V</th><th>I</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- GRAPH -->
+    <div class="obs-right">
+      <button onclick="plotGraph()">Plot Graph</button><br><br>
+      <canvas id="graph" width="400" height="250"
+              style="border:1px solid black;"></canvas>
+    </div>
+
+  </div>
 </div>
 
 <script>
-/* ===== SCREEN CONTROL ===== */
-function goToScreen(n){
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  document.getElementById("screen"+n).classList.add("active");
+/* ---------- SCREEN CONTROL ---------- */
+function goToScreen(n) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById("screen" + n).classList.add("active");
 }
 
-/* ===== CIRCUIT & WIRING ===== */
+/* ---------- CIRCUIT & WIRING ---------- */
 let components = [];
 let connections = [];
 let selected = null;
-let idCount = 0;
+let idCounter = 0;
 
-function addComponent(type){
+function addComponent(type) {
   const el = document.createElement("div");
   el.className = "component";
   el.innerText = type;
-  el.dataset.id = type + (++idCount);
   el.dataset.type = type;
-  el.style.left = Math.random()*500 + "px";
-  el.style.top = Math.random()*200 + "px";
-  el.onclick = () => selectComponent(el);
+  el.dataset.id = ++idCounter;
 
+  el.style.left = Math.random() * 500 + "px";
+  el.style.top = Math.random() * 200 + "px";
+
+  el.onclick = () => selectComponent(el);
   workspace.appendChild(el);
   components.push(el);
 }
 
-function selectComponent(el){
-  if(!selected){
+function selectComponent(el) {
+  if (!selected) {
     selected = el;
     el.classList.add("selected");
-  } else if(selected !== el){
+  } else if (selected !== el) {
     connections.push([selected, el]);
     selected.classList.remove("selected");
     selected = null;
@@ -141,53 +227,68 @@ function selectComponent(el){
   }
 }
 
-function drawWires(){
-  const c = wires.getContext("2d");
-  c.clearRect(0,0,600,260);
-  connections.forEach(pair=>{
+function drawWires() {
+  const ctx = wireCanvas.getContext("2d");
+  ctx.clearRect(0, 0, 600, 260);
+
+  connections.forEach(pair => {
     const a = pair[0].getBoundingClientRect();
     const b = pair[1].getBoundingClientRect();
-    const wa = workspace.getBoundingClientRect();
-    c.beginPath();
-    c.moveTo(a.left-wa.left+20, a.top-wa.top+10);
-    c.lineTo(b.left-wa.left+20, b.top-wa.top+10);
-    c.stroke();
+    const w = workspace.getBoundingClientRect();
+
+    ctx.beginPath();
+    ctx.moveTo(a.left - w.left + 20, a.top - w.top + 10);
+    ctx.lineTo(b.left - w.left + 20, b.top - w.top + 10);
+    ctx.stroke();
   });
 }
 
-/* ===== VALIDATION ===== */
-function validateCircuit(){
-  const types = components.map(c=>c.dataset.type);
-  const needed = ["battery","ammeter","resistor","voltmeter"];
-  const ok = needed.every(t=>types.includes(t)) && connections.length >= 3;
+function validateCircuit() {
+  const types = components.map(c => c.dataset.type);
+  const needed = ["battery", "ammeter", "resistor", "voltmeter"];
 
-  circuitResult.innerText = ok ? "✔ Correct wiring" : "✖ Incorrect wiring";
+  const ok = needed.every(n => types.includes(n)) && connections.length >= 3;
+
+  circuitResult.innerText = ok ? "✔ Correct Circuit" : "✖ Incorrect Circuit";
   circuitResult.style.color = ok ? "green" : "red";
-  if(ok) nextBtn.style.display="inline-block";
+
+  if (ok) nextBtn.style.display = "inline-block";
 }
 
-/* ===== OBSERVATION & GRAPH ===== */
-let readings=[];
-function addRow(){
-  const V=Number(document.getElementById("V").value);
-  const R=Number(document.getElementById("R").value);
-  if(V<=0||R<=0)return;
-  const I=(V/R).toFixed(3);
-  readings.push({V,I});
-  tableBody.innerHTML+=`<tr><td>${V}</td><td>${I}</td></tr>`;
+/* ---------- OBSERVATION & GRAPH ---------- */
+let readings = [];
+
+function addRow() {
+  const V = Number(document.getElementById("V").value);
+  const R = Number(document.getElementById("R").value);
+  if (V <= 0 || R <= 0) return;
+
+  const I = (V / R).toFixed(3);
+  readings.push({ V, I });
+
+  tableBody.innerHTML += `<tr><td>${V}</td><td>${I}</td></tr>`;
 }
 
-function plotGraph(){
-  const ctx=graph.getContext("2d");
-  ctx.clearRect(0,0,400,250);
-  ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,220); ctx.lineTo(380,220); ctx.stroke();
-  const maxV=Math.max(...readings.map(r=>r.V));
-  const maxI=Math.max(...readings.map(r=>r.I));
+function plotGraph() {
+  const ctx = graph.getContext("2d");
+  ctx.clearRect(0, 0, 400, 250);
+
   ctx.beginPath();
-  readings.forEach((r,i)=>{
-    const x=40+(r.V/maxV)*320;
-    const y=220-(r.I/maxI)*200;
-    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  ctx.moveTo(40, 10);
+  ctx.lineTo(40, 220);
+  ctx.lineTo(380, 220);
+  ctx.stroke();
+
+  if (readings.length === 0) return;
+
+  const maxV = Math.max(...readings.map(r => r.V));
+  const maxI = Math.max(...readings.map(r => r.I));
+
+  ctx.beginPath();
+  readings.forEach((r, i) => {
+    const x = 40 + (r.V / maxV) * 320;
+    const y = 220 - (r.I / maxI) * 200;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
   });
   ctx.stroke();
 }
