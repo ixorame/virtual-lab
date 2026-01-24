@@ -6,9 +6,9 @@
   <style>
     body {
       font-family: Arial;
-      background: #f4f6f8;
       margin: 0;
       padding: 0;
+      background: #f4f6f8;
     }
 
     h2 {
@@ -16,9 +16,12 @@
       margin-top: 20px;
     }
 
+    /* ---------- SCREEN SYSTEM ---------- */
     .screen {
       display: none;
       padding: 20px;
+      min-height: 100vh;
+      box-sizing: border-box;
     }
 
     .active {
@@ -31,7 +34,34 @@
       cursor: pointer;
     }
 
-    /* CIRCUIT AREA */
+    /* ---------- SCREEN 1 SPECIAL STYLING ---------- */
+    #screen1 {
+      background: #dff5df; /* light green */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .select-panel {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      text-align: center;
+      width: 320px;
+    }
+
+    .select-panel h3 {
+      margin-top: 0;
+    }
+
+    select {
+      width: 100%;
+      padding: 6px;
+      margin-top: 10px;
+    }
+
+    /* ---------- CIRCUIT AREA ---------- */
     #workspace {
       width: 600px;
       height: 260px;
@@ -61,7 +91,7 @@
       pointer-events: none;
     }
 
-    /* OBSERVATION + GRAPH */
+    /* ---------- OBSERVATION & GRAPH ---------- */
     .obs-container {
       display: flex;
       gap: 40px;
@@ -96,14 +126,16 @@
 
 <!-- SCREEN 1 -->
 <div class="screen active" id="screen1">
-  <h3>Select Experiment</h3>
+  <div class="select-panel">
+    <h3>Select Experiment</h3>
 
-  <select id="experimentSelect">
-    <option value="ohm">Ohm’s Law</option>
-  </select>
+    <select id="experimentSelect">
+      <option value="ohm">Ohm’s Law</option>
+    </select>
 
-  <br>
-  <button onclick="goToScreen(2)">Next</button>
+    <br><br>
+    <button onclick="goToScreen(2)">Next</button>
+  </div>
 </div>
 
 <!-- SCREEN 2 -->
@@ -159,7 +191,6 @@
 
   <div class="obs-container">
 
-    <!-- OBSERVATION -->
     <div class="obs-left">
       Voltage (V):<br>
       <input id="V" type="number"><br><br>
@@ -177,7 +208,6 @@
       </table>
     </div>
 
-    <!-- GRAPH -->
     <div class="obs-right">
       <button onclick="plotGraph()">Plot Graph</button><br><br>
       <canvas id="graph" width="400" height="250"
