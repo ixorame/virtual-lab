@@ -2,7 +2,7 @@
 <html>
 <body>
 
-<!-- SCREEN 1 -->
+<!-- ================= SCREEN 1 ================= -->
 <div id="screen1">
   <h2>Virtual Lab</h2>
 
@@ -17,7 +17,7 @@
   <button onclick="goNext()">Start</button>
 </div>
 
-<!-- SCREEN 2 -->
+<!-- ================= SCREEN 2 ================= -->
 <div id="screen2" style="display:none;">
 
   <h2 id="expName"></h2>
@@ -35,6 +35,7 @@
     <li>Select the experiment.</li>
     <li>Enter voltage and resistance.</li>
     <li>Click Add Reading to calculate current.</li>
+    <li>Observe the values in the table.</li>
   </ol>
 
   <!-- INPUT SECTION -->
@@ -48,9 +49,19 @@
 
   <button onclick="addReading()">Add Reading</button>
 
-  <!-- OUTPUT -->
-  <h3>Output</h3>
-  <p id="outputText">No reading added yet.</p>
+  <!-- OBSERVATION TABLE -->
+  <h3>Observation Table</h3>
+  <table border="1" cellpadding="6">
+    <thead>
+      <tr>
+        <th>Voltage (V)</th>
+        <th>Resistance (Ω)</th>
+        <th>Current (A)</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody">
+    </tbody>
+  </table>
 
 </div>
 
@@ -80,8 +91,20 @@
     // Ohm's Law calculation
     const I = (V / R).toFixed(3);
 
-    document.getElementById("outputText").innerText =
-      "Calculated Current (I) = " + I + " A";
+    // Add row to table
+    const row = `
+      <tr>
+        <td>${V}</td>
+        <td>${R}</td>
+        <td>${I}</td>
+      </tr>
+    `;
+
+    document.getElementById("tableBody").innerHTML += row;
+
+    // Clear inputs for next reading
+    document.getElementById("voltage").value = "";
+    document.getElementById("resistance").value = "";
   }
 </script>
 
