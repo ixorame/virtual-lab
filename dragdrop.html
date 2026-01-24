@@ -1,1 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    #palette {
+      width: 150px;
+      padding: 10px;
+      border: 2px solid black;
+      float: left;
+    }
+
+    #workspace {
+      margin-left: 170px;
+      width: 500px;
+      height: 300px;
+      border: 2px dashed black;
+      position: relative;
+    }
+
+    .component {
+      padding: 8px;
+      margin: 5px;
+      background-color: lightgray;
+      cursor: grab;
+      text-align: center;
+    }
+
+    .placed {
+      position: absolute;
+      background-color: lightblue;
+      padding: 8px;
+      cursor: default;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>Drag & Drop Circuit Builder</h2>
+
+<!-- COMPONENT PALETTE -->
+<div id="palette">
+  <div class="component" draggable="true" ondragstart="drag(event)" id="battery">
+    Battery
+  </div>
+</div>
+
+<!-- WORKSPACE -->
+<div id="workspace" ondragover="allowDrop(event)" ondrop="drop(event)">
+  Drop components here
+</div>
+
+<script>
+  function drag(ev) {
+    ev.dataTransfer.setData("componentId", ev.target.id);
+  }
+
+  function allowDrop(ev) {
+    ev.preventDefault();
+  }
+
+  function drop(ev) {
+    ev.preventDefault();
+
+    const id = ev.dataTransfer.getData("componentId");
+    const original = document.getElementById(id);
+
+    const clone = original.cloneNode(true);
+    clone.classList.remove("component");
+    clone.classList.add("placed");
+    clone.style.left = ev.offsetX + "px";
+    clone.style.top = ev.offsetY + "px";
+    clone.removeAttribute("draggable");
+
+    ev.target.appendChild(clone);
+  }
+</script>
+
+</body>
+</html>
 
