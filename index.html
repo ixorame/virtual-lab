@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab – Ohm's Law</title>
+  <title>Virtual Lab – Multiple Experiments</title>
   <style>
     body { font-family: Arial; }
 
@@ -37,9 +37,7 @@
       cursor: pointer;
     }
 
-    .selected {
-      border-color: red;
-    }
+    .selected { border-color: red; }
 
     #panel {
       clear: both;
@@ -59,7 +57,16 @@
 
 <body>
 
-<h2>Virtual Lab – Ohm’s Law (Logical Validation)</h2>
+<h2>Virtual Lab – Logical Circuit Validation</h2>
+
+<!-- EXPERIMENT SELECTION -->
+<label>Select Experiment:</label>
+<select id="experimentSelect" onchange="resetLab()">
+  <option value="ohm">Ohm's Law</option>
+  <option value="series">Series Resistance</option>
+</select>
+
+<br><br>
 
 <!-- PALETTE -->
 <div id="palette">
@@ -78,137 +85,149 @@
   <button onclick="validateCircuit()">Validate Circuit</button>
   <span id="result"></span>
 
-  <!-- EXPERIMENT -->
+  <!-- EXPERIMENT AREA -->
   <div id="experiment">
-    <h3>Ohm’s Law Experiment</h3>
+    <h3 id="expTitle"></h3>
 
-    Voltage (V):<br>
-    <input type="number" id="voltage"><br><br>
-
-    Resistance (Ω):<br>
-    <input type="number" id="resistance"><br><br>
+    <div id="inputs"></div>
 
     <button onclick="addReading()">Add Reading</button>
 
     <h4>Observation Table</h4>
     <table border="1">
-      <thead>
-        <tr><th>V</th><th>R</th><th>I</th></tr>
-      </thead>
+      <thead id="tableHead"></thead>
       <tbody id="tableBody"></tbody>
     </table>
 
     <br>
-    <button onclick="plotGraph()">Plot V–I Graph</button><br><br>
+    <button onclick="plotGraph()">Plot Graph</button><br><br>
     <canvas id="graph" width="400" height="250" style="border:1px solid black;"></canvas>
 
-    <h4>Simulation (Current Flow)</h4>
+    <h4>Simulation</h4>
     <canvas id="sim" width="400" height="80" style="border:1px solid black;"></canvas>
   </div>
 </div>
 
 <script>
-/* ---------- CIRCUIT BUILDER ---------- */
+/* ========== EXPERIMENT DEFINITIONS ========== */
 
-let componentCount = 0;
+const experiments = {
+  ohm: {
+    title: "Ohm's Law",
+    inputs: ["V", "R"],
+    table: ["V", "R", "I"],
+    validateCircuit: ids =>
+      isConnected(ids.battery, ids.ammeter) &&
+      isConnected(ids.ammeter, ids.resistor) &&
+      isConnected(ids.resistor, ids.battery),
+    calculate: vals => ({ I: (vals.V / vals.R).toFixed(3) }),
+    graph: true,
+    simulate: true
+  },
+
+  series: {
+    title: "Series Resistance",
+    inputs: ["R1", "R2"],
+    table: ["R1", "R2", "Req"],
+    validateCircuit: ids =>
+      isConnected(ids.battery, ids.ammeter) &&
+      isConnected(ids.ammeter, ids.resistor) &&
+      isConnected(ids.resistor, ids.battery),
+    calculate: vals => ({ Req: (vals.R1 + vals.R2).toFixed(2) }),
+    graph: false,
+    simulate: false
+  }
+};
+
+/* ========== STATE ========== */
+
 let placedComponents = [];
 let connections = [];
 let selected = null;
-let circuitValidated = false;
-
-/* ---------- EXPERIMENT ---------- */
-
+let componentCount = 0;
 let readings = [];
+let circuitValidated = false;
 let simInterval = null;
 let electronX = 20;
 
-/* ---------- DRAG & DROP ---------- */
+/* ========== DRAG & DROP ========== */
 
 function drag(ev) {
   ev.dataTransfer.setData("type", ev.target.dataset.type);
 }
 
-function allowDrop(ev) {
-  ev.preventDefault();
-}
+function allowDrop(ev) { ev.preventDefault(); }
 
 function drop(ev) {
   ev.preventDefault();
   const type = ev.dataTransfer.getData("type");
-
   componentCount++;
-  const id = type + componentCount;
 
   const el = document.createElement("div");
   el.className = "placed";
   el.innerText = type;
-  el.dataset.id = id;
+  el.dataset.id = type + componentCount;
   el.dataset.type = type;
   el.style.left = ev.offsetX + "px";
   el.style.top = ev.offsetY + "px";
-  el.onclick = () => selectComponent(el);
+  el.onclick = () => select(el);
 
   workspace.appendChild(el);
-  placedComponents.push({ id, type });
+  placedComponents.push({ id: el.dataset.id, type });
 }
 
-/* ---------- CONNECTION LOGIC ---------- */
-
-function selectComponent(el) {
+function select(el) {
   if (!selected) {
     selected = el;
     el.classList.add("selected");
-  } else if (selected !== el) {
+  } else {
     connections.push({ from: selected.dataset.id, to: el.dataset.id });
     selected.classList.remove("selected");
     selected = null;
   }
 }
 
-/* ---------- VALIDATION ---------- */
+/* ========== VALIDATION ========== */
 
 function validateCircuit() {
+  const exp = experiments[experimentSelect.value];
   const ids = {};
   placedComponents.forEach(c => ids[c.type] = c.id);
 
   if (!ids.battery || !ids.ammeter || !ids.resistor) {
-    fail("Battery, Ammeter, and Resistor required");
+    fail("Missing required components");
     return;
   }
 
-  if (
-    isConnected(ids.battery, ids.ammeter) &&
-    isConnected(ids.ammeter, ids.resistor) &&
-    isConnected(ids.resistor, ids.battery)
-  ) {
+  if (exp.validateCircuit(ids)) {
     circuitValidated = true;
-    result.innerText = " ✔ Circuit Correct — Experiment Unlocked";
-    result.style.color = "green";
     unlockExperiment();
+    result.innerText = "✔ Correct Circuit";
+    result.style.color = "green";
   } else {
-    fail("Incorrect series loop");
+    fail("Incorrect connections");
   }
 }
 
-function isConnected(a, b) {
+function isConnected(a,b) {
   return connections.some(c =>
-    (c.from === a && c.to === b) || (c.from === b && c.to === a)
+    (c.from===a && c.to===b) || (c.from===b && c.to===a)
   );
 }
 
 function fail(msg) {
   circuitValidated = false;
-  result.innerText = " ✖ " + msg;
-  result.style.color = "red";
   lockExperiment();
-  stopSimulation();
+  result.innerText = "✖ " + msg;
+  result.style.color = "red";
 }
 
-/* ---------- EXPERIMENT GATE ---------- */
+/* ========== EXPERIMENT ENGINE ========== */
 
 function unlockExperiment() {
   experiment.style.opacity = "1";
   experiment.style.pointerEvents = "auto";
+  setupExperimentUI();
 }
 
 function lockExperiment() {
@@ -216,71 +235,87 @@ function lockExperiment() {
   experiment.style.pointerEvents = "none";
 }
 
-/* ---------- EXPERIMENT LOGIC ---------- */
+function setupExperimentUI() {
+  const exp = experiments[experimentSelect.value];
+  expTitle.innerText = exp.title;
+
+  inputs.innerHTML = exp.inputs.map(i =>
+    `${i}:<br><input type="number" id="${i}"><br><br>`
+  ).join("");
+
+  tableHead.innerHTML = "<tr>" + exp.table.map(h=>`<th>${h}</th>`).join("") + "</tr>";
+  tableBody.innerHTML = "";
+  readings = [];
+}
 
 function addReading() {
   if (!circuitValidated) return;
+  const exp = experiments[experimentSelect.value];
 
-  const V = Number(voltage.value);
-  const R = Number(resistance.value);
-  if (V <= 0 || R <= 0) return;
+  const vals = {};
+  exp.inputs.forEach(i => vals[i] = Number(document.getElementById(i).value));
 
-  const I = (V / R).toFixed(3);
-  readings.push({ V, I });
+  const result = exp.calculate(vals);
+  readings.push({ ...vals, ...result });
 
-  tableBody.innerHTML += `<tr><td>${V}</td><td>${R}</td><td>${I}</td></tr>`;
-  startSimulation(Number(I));
+  tableBody.innerHTML += "<tr>" +
+    exp.table.map(k=>`<td>${vals[k] ?? result[k]}</td>`).join("") +
+    "</tr>";
+
+  if (exp.simulate) startSimulation(result.I);
 }
 
 function plotGraph() {
-  if (!circuitValidated || readings.length === 0) return;
+  const exp = experiments[experimentSelect.value];
+  if (!exp.graph || readings.length === 0) return;
 
   const ctx = graph.getContext("2d");
   ctx.clearRect(0,0,400,250);
 
   ctx.beginPath();
-  ctx.moveTo(40,10);
-  ctx.lineTo(40,220);
-  ctx.lineTo(380,220);
-  ctx.stroke();
+  ctx.moveTo(40,10); ctx.lineTo(40,220); ctx.lineTo(380,220); ctx.stroke();
 
-  const maxV = Math.max(...readings.map(r=>r.V));
-  const maxI = Math.max(...readings.map(r=>r.I));
+  const maxX = Math.max(...readings.map(r=>r.V));
+  const maxY = Math.max(...readings.map(r=>r.I));
 
   ctx.beginPath();
   readings.forEach((r,i)=>{
-    const x = 40 + (r.V/maxV)*320;
-    const y = 220 - (r.I/maxI)*200;
+    const x = 40 + (r.V/maxX)*320;
+    const y = 220 - (r.I/maxY)*200;
     i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
   });
   ctx.stroke();
 }
 
-/* ---------- SIMULATION ---------- */
+/* ========== SIMULATION ========== */
 
 function startSimulation(current) {
   const ctx = sim.getContext("2d");
   if (simInterval) clearInterval(simInterval);
   electronX = 20;
-  const speed = Math.max(current * 10, 2);
 
   simInterval = setInterval(()=>{
     ctx.clearRect(0,0,400,80);
-    ctx.fillStyle="black";
     ctx.fillRect(10,35,380,8);
-
-    ctx.fillStyle="red";
     ctx.beginPath();
     ctx.arc(electronX,39,5,0,Math.PI*2);
     ctx.fill();
-
-    electronX += speed;
-    if (electronX > 390) electronX = 10;
+    electronX += Math.max(current*10,2);
+    if (electronX>390) electronX=10;
   },100);
 }
 
-function stopSimulation() {
-  if (simInterval) clearInterval(simInterval);
+/* ========== RESET ========== */
+
+function resetLab() {
+  workspace.innerHTML = "Drop components here";
+  placedComponents=[];
+  connections=[];
+  componentCount=0;
+  readings=[];
+  circuitValidated=false;
+  lockExperiment();
+  result.innerText="";
 }
 </script>
 
