@@ -44,6 +44,13 @@
     <tbody id="tableBody"></tbody>
   </table>
 
+  <br>
+  <button onclick="plotGraph()">Plot Graph</button>
+
+  <!-- GRAPH -->
+  <h3>Graph</h3>
+  <canvas id="graph" width="400" height="300" style="border:1px solid black;"></canvas>
+
 </div>
 
 <script>
@@ -53,12 +60,11 @@ const experiments = {
   ohm: {
     title: "Ohm's Law Experiment",
     theory:
-      "Ohm’s Law states that the current flowing through a conductor is directly proportional to the voltage applied across it, provided physical conditions remain constant. Mathematically, V = I × R.",
+      "Ohm’s Law states that current is directly proportional to voltage at constant temperature. V = I × R.",
     procedure: [
-      "Connect the resistor in the circuit.",
-      "Apply a known voltage across the resistor.",
-      "Measure the voltage and resistance values.",
-      "Calculate the current using Ohm’s Law."
+      "Apply voltage across the resistor.",
+      "Note voltage and resistance.",
+      "Calculate current."
     ],
     inputs: ["V", "R"],
     output: "I",
@@ -68,11 +74,11 @@ const experiments = {
   series: {
     title: "Series Resistance Experiment",
     theory:
-      "When resistors are connected in series, the equivalent resistance is equal to the sum of the individual resistances. Mathematically, Req = R₁ + R₂.",
+      "Equivalent resistance in series is the sum of individual resistances. Req = R1 + R2.",
     procedure: [
-      "Connect two resistors in series.",
-      "Measure the resistance values R₁ and R₂.",
-      "Add the resistance values to obtain equivalent resistance."
+      "Connect resistors in series.",
+      "Note R1 and R2.",
+      "Calculate equivalent resistance."
     ],
     inputs: ["R1", "R2"],
     output: "Req",
@@ -81,18 +87,19 @@ const experiments = {
 };
 
 let currentExperiment = null;
+let readings = [];
 
-/* ================= START EXPERIMENT ================= */
+/* ================= START ================= */
 
 function startExperiment() {
   const key = document.getElementById("experimentSelect").value;
-
   if (!key) {
     alert("Select an experiment");
     return;
   }
 
   currentExperiment = experiments[key];
+  readings = [];
 
   document.getElementById("screen1").style.display = "none";
   document.getElementById("screen2").style.display = "block";
@@ -100,23 +107,18 @@ function startExperiment() {
   setupUI();
 }
 
-/* ================= SETUP UI ================= */
+/* ================= UI SETUP ================= */
 
 function setupUI() {
-  // Title
   document.getElementById("expTitle").innerText = currentExperiment.title;
-
-  // Theory
   document.getElementById("theoryText").innerText = currentExperiment.theory;
 
-  // Procedure
   let procHTML = "";
   currentExperiment.procedure.forEach(step => {
     procHTML += <li>${step}</li>;
   });
   document.getElementById("procedureList").innerHTML = procHTML;
 
-  // Inputs
   let inputHTML = "";
   currentExperiment.inputs.forEach(name => {
     inputHTML += `
@@ -126,15 +128,15 @@ function setupUI() {
   });
   document.getElementById("inputArea").innerHTML = inputHTML;
 
-  // Table head
   let headHTML = "";
   currentExperiment.inputs.forEach(name => {
     headHTML += <th>${name}</th>;
   });
   headHTML += <th>${currentExperiment.output}</th>;
-
   document.getElementById("tableHead").innerHTML = headHTML;
+
   document.getElementById("tableBody").innerHTML = "";
+  clearGraph();
 }
 
 /* ================= ADD READING ================= */
@@ -153,16 +155,63 @@ function addReading() {
 
   const result = currentExperiment.formula(...values).toFixed(3);
 
+  readings.push({
+    x: values[0],
+    y: result
+  });
+
   let row = "<tr>";
   values.forEach(v => row += <td>${v}</td>);
   row += <td>${result}</td></tr>;
 
   document.getElementById("tableBody").innerHTML += row;
 
-  // clear inputs
   currentExperiment.inputs.forEach(name => {
     document.getElementById(name).value = "";
   });
+}
+
+/* ================= GRAPH ================= */
+
+function plotGraph() {
+  if (readings.length === 0) {
+    alert("Add readings first");
+    return;
+  }
+
+  const canvas = document.getElementById("graph");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // axes
+  ctx.beginPath();
+  ctx.moveTo(40, 10);
+  ctx.lineTo(40, 260);
+  ctx.lineTo(380, 260);
+  ctx.stroke();
+
+  ctx.fillText(currentExperiment.inputs[0], 180, 290);
+  ctx.save();
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText(currentExperiment.output, -170, 15);
+  ctx.restore();
+
+  let maxX = Math.max(...readings.map(p => p.x));
+  let maxY = Math.max(...readings.map(p => p.y));
+
+  ctx.beginPath();
+  readings.forEach((p, i) => {
+    let x = 40 + (p.x / maxX) * 320;
+    let y = 260 - (p.y / maxY) * 240;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+function clearGraph() {
+  const ctx = document.getElementById("graph").getContext("2d");
+  ctx.clearRect(0, 0, 400, 300);
 }
 </script>
 
