@@ -35,7 +35,7 @@
     <li>Select the experiment.</li>
     <li>Enter voltage and resistance.</li>
     <li>Add readings to the table.</li>
-    <li>Plot the V–I graph.</li>
+    <li>Observe simulation and graph.</li>
   </ol>
 
   <!-- INPUT -->
@@ -69,20 +69,28 @@
   <h3>V–I Graph</h3>
   <canvas id="graph" width="400" height="300" style="border:1px solid black;"></canvas>
 
+  <!-- SIMULATION -->
+  <h3>Simulation</h3>
+  <canvas id="sim" width="400" height="100" style="border:1px solid black;"></canvas>
+
+  <br><br>
+  <button onclick="resetLab()">New Experiment</button>
+
 </div>
 
 <script>
   let readings = [];
+  let simInterval = null;
+  let electronX = 20;
 
   function goNext() {
     const exp = document.getElementById("experiment").value;
-
     if (exp === "") {
       alert("Please select an experiment");
       return;
     }
 
-    readings = []; // reset data
+    readings = [];
     document.getElementById("tableBody").innerHTML = "";
 
     document.getElementById("screen1").style.display = "none";
@@ -90,6 +98,7 @@
     document.getElementById("expName").innerText = exp;
 
     clearGraph();
+    clearSimulation();
   }
 
   function addReading() {
@@ -102,17 +111,12 @@
     }
 
     const I = (V / R).toFixed(3);
-
     readings.push({ V, I });
 
-    const row = `
-      <tr>
-        <td>${V}</td>
-        <td>${R}</td>
-        <td>${I}</td>
-      </tr>
-    `;
-    document.getElementById("tableBody").innerHTML += row;
+    document.getElementById("tableBody").innerHTML +=
+      `<tr><td>${V}</td><td>${R}</td><td>${I}</td></tr>`;
+
+    startSimulation(Number(I));
 
     document.getElementById("voltage").value = "";
     document.getElementById("resistance").value = "";
@@ -126,24 +130,20 @@
 
     const canvas = document.getElementById("graph");
     const ctx = canvas.getContext("2d");
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Axes
     ctx.beginPath();
     ctx.moveTo(40, 10);
     ctx.lineTo(40, 260);
     ctx.lineTo(380, 260);
     ctx.stroke();
 
-    // Labels
     ctx.fillText("Voltage (V)", 170, 290);
     ctx.save();
     ctx.rotate(-Math.PI / 2);
     ctx.fillText("Current (A)", -170, 15);
     ctx.restore();
 
-    // Scaling
     const maxV = Math.max(...readings.map(r => r.V));
     const maxI = Math.max(...readings.map(r => r.I));
 
@@ -157,9 +157,50 @@
     ctx.stroke();
   }
 
+  function startSimulation(current) {
+    const canvas = document.getElementById("sim");
+    const ctx = canvas.getContext("2d");
+
+    if (simInterval) clearInterval(simInterval);
+    electronX = 20;
+
+    const speed = Math.max(current * 10, 2);
+
+    simInterval = setInterval(() => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "black";
+      ctx.fillRect(10, 45, 380, 10);
+
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(electronX, 50, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      electronX += speed;
+      if (electronX > 390) electronX = 10;
+    }, 100);
+  }
+
   function clearGraph() {
     const ctx = document.getElementById("graph").getContext("2d");
     ctx.clearRect(0, 0, 400, 300);
+  }
+
+  function clearSimulation() {
+    const ctx = document.getElementById("sim").getContext("2d");
+    ctx.clearRect(0, 0, 400, 100);
+    if (simInterval) clearInterval(simInterval);
+  }
+
+  function resetLab() {
+    clearGraph();
+    clearSimulation();
+    readings = [];
+    document.getElementById("tableBody").innerHTML = "";
+    document.getElementById("screen2").style.display = "none";
+    document.getElementById("screen1").style.display = "block";
+    document.getElementById("experiment").value = "";
   }
 </script>
 
