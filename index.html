@@ -1,206 +1,190 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <style>
+    #palette { width:180px; float:left; border:2px solid black; padding:10px; }
+    #workspace { margin-left:200px; width:600px; height:300px; border:2px dashed black; position:relative; }
+    .component { background:#ddd; padding:6px; margin:6px 0; cursor:grab; text-align:center; font-weight:bold; }
+    .placed { position:absolute; background:#bde; padding:6px; border:2px solid black; cursor:pointer; }
+    .selected { border-color:red; }
+    #panel { clear:both; margin-top:20px; border:1px solid black; padding:10px; width:800px; }
+    #experiment { opacity:0.4; pointer-events:none; }
+  </style>
+</head>
+
 <body>
 
-<!-- ================= SCREEN 1 ================= -->
-<div id="screen1">
-  <h2>Virtual Lab</h2>
+<h2>Virtual Lab — Circuit + Experiment</h2>
 
-  <label>Select Experiment:</label><br><br>
-  <select id="experiment">
-    <option value="">-- Select --</option>
-    <option value="Ohm's Law">Ohm's Law</option>
-    <option value="Series Resistance">Series Resistance</option>
-  </select>
-  <br><br>
-
-  <button onclick="goNext()">Start</button>
+<!-- PALETTE -->
+<div id="palette">
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="battery">Battery</div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="ammeter">Ammeter</div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="resistor">Resistor</div>
 </div>
 
-<!-- ================= SCREEN 2 ================= -->
-<div id="screen2" style="display:none;">
+<!-- WORKSPACE -->
+<div id="workspace" ondragover="allowDrop(event)" ondrop="drop(event)">
+  Drop components here
+</div>
 
-  <h2 id="expName"></h2>
+<!-- CONTROL PANEL -->
+<div id="panel">
+  <button onclick="validateCircuit()">Validate Circuit</button>
+  <div id="result"></div>
 
-  <!-- THEORY -->
-  <h3>Theory</h3>
-  <p>
-    This experiment demonstrates the relationship between electrical quantities.
-    For Ohm’s Law, current is directly proportional to voltage.
-  </p>
+  <!-- EXPERIMENT (LOCKED INITIALLY) -->
+  <div id="experiment">
+    <h3>Ohm’s Law Experiment</h3>
 
-  <!-- PROCEDURE -->
-  <h3>Procedure</h3>
-  <ol>
-    <li>Select the experiment.</li>
-    <li>Enter voltage and resistance.</li>
-    <li>Add readings to the table.</li>
-    <li>Observe simulation and graph.</li>
-  </ol>
+    Voltage (V):<br>
+    <input type="number" id="voltage"><br><br>
 
-  <!-- INPUT -->
-  <h3>Enter Values</h3>
+    Resistance (Ω):<br>
+    <input type="number" id="resistance"><br><br>
 
-  <label>Voltage (V):</label><br>
-  <input type="number" id="voltage"><br><br>
+    <button onclick="addReading()">Add Reading</button>
 
-  <label>Resistance (Ω):</label><br>
-  <input type="number" id="resistance"><br><br>
+    <h4>Observation Table</h4>
+    <table border="1">
+      <thead>
+        <tr><th>V</th><th>R</th><th>I</th></tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
 
-  <button onclick="addReading()">Add Reading</button>
-
-  <!-- TABLE -->
-  <h3>Observation Table</h3>
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Voltage (V)</th>
-        <th>Resistance (Ω)</th>
-        <th>Current (A)</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-
-  <br>
-  <button onclick="plotGraph()">Plot V–I Graph</button>
-
-  <!-- GRAPH -->
-  <h3>V–I Graph</h3>
-  <canvas id="graph" width="400" height="300" style="border:1px solid black;"></canvas>
-
-  <!-- SIMULATION -->
-  <h3>Simulation</h3>
-  <canvas id="sim" width="400" height="100" style="border:1px solid black;"></canvas>
-
-  <br><br>
-  <button onclick="resetLab()">New Experiment</button>
-
+    <br>
+    <button onclick="plotGraph()">Plot V–I Graph</button>
+    <br><br>
+    <canvas id="graph" width="400" height="250" style="border:1px solid black;"></canvas>
+  </div>
 </div>
 
 <script>
+  let componentCount = 0;
+  let placedComponents = [];
+  let connections = [];
+  let selected = null;
+  let circuitValidated = false;
   let readings = [];
-  let simInterval = null;
-  let electronX = 20;
 
-  function goNext() {
-    const exp = document.getElementById("experiment").value;
-    if (exp === "") {
-      alert("Please select an experiment");
-      return;
-    }
-
-    readings = [];
-    document.getElementById("tableBody").innerHTML = "";
-
-    document.getElementById("screen1").style.display = "none";
-    document.getElementById("screen2").style.display = "block";
-    document.getElementById("expName").innerText = exp;
-
-    clearGraph();
-    clearSimulation();
+  function drag(ev) {
+    ev.dataTransfer.setData("type", ev.target.dataset.type);
   }
 
-  function addReading() {
-    const V = Number(document.getElementById("voltage").value);
-    const R = Number(document.getElementById("resistance").value);
+  function allowDrop(ev) { ev.preventDefault(); }
 
-    if (V <= 0 || R <= 0) {
-      alert("Enter valid values");
+  function drop(ev) {
+    ev.preventDefault();
+    const type = ev.dataTransfer.getData("type");
+    componentCount++;
+    const id = type + componentCount;
+
+    const el = document.createElement("div");
+    el.className = "placed";
+    el.innerText = type;
+    el.dataset.id = id;
+    el.dataset.type = type;
+    el.style.left = ev.offsetX + "px";
+    el.style.top = ev.offsetY + "px";
+    el.onclick = () => select(el);
+
+    ev.target.appendChild(el);
+    placedComponents.push({ id, type });
+  }
+
+  function select(el) {
+    if (!selected) {
+      selected = el;
+      el.classList.add("selected");
+    } else if (selected !== el) {
+      connections.push({ from: selected.dataset.id, to: el.dataset.id });
+      selected.classList.remove("selected");
+      selected = null;
+    }
+  }
+
+  function validateCircuit() {
+    const ids = {};
+    placedComponents.forEach(c => ids[c.type] = c.id);
+
+    if (!ids.battery || !ids.ammeter || !ids.resistor) {
+      fail("Battery, Ammeter, Resistor required");
       return;
     }
+
+    if (
+      isConnected(ids.battery, ids.ammeter) &&
+      isConnected(ids.ammeter, ids.resistor) &&
+      isConnected(ids.resistor, ids.battery)
+    ) {
+      circuitValidated = true;
+      document.getElementById("result").innerText = "✔ Circuit Correct — Experiment Unlocked";
+      document.getElementById("result").style.color = "green";
+      unlockExperiment();
+    } else {
+      fail("Incorrect series loop");
+    }
+  }
+
+  function isConnected(a, b) {
+    return connections.some(c =>
+      (c.from === a && c.to === b) || (c.from === b && c.to === a)
+    );
+  }
+
+  function fail(msg) {
+    circuitValidated = false;
+    document.getElementById("result").innerText = "✖ " + msg;
+    document.getElementById("result").style.color = "red";
+    lockExperiment();
+  }
+
+  function unlockExperiment() {
+    const e = document.getElementById("experiment");
+    e.style.opacity = "1";
+    e.style.pointerEvents = "auto";
+  }
+
+  function lockExperiment() {
+    const e = document.getElementById("experiment");
+    e.style.opacity = "0.4";
+    e.style.pointerEvents = "none";
+  }
+
+  /* -------- EXPERIMENT -------- */
+
+  function addReading() {
+    if (!circuitValidated) return;
+
+    const V = Number(voltage.value);
+    const R = Number(resistance.value);
+    if (V <= 0 || R <= 0) return;
 
     const I = (V / R).toFixed(3);
     readings.push({ V, I });
 
-    document.getElementById("tableBody").innerHTML +=
-      `<tr><td>${V}</td><td>${R}</td><td>${I}</td></tr>`;
-
-    startSimulation(Number(I));
-
-    document.getElementById("voltage").value = "";
-    document.getElementById("resistance").value = "";
+    tableBody.innerHTML += `<tr><td>${V}</td><td>${R}</td><td>${I}</td></tr>`;
   }
 
   function plotGraph() {
-    if (readings.length === 0) {
-      alert("Add readings first");
-      return;
-    }
+    if (!circuitValidated || readings.length === 0) return;
 
-    const canvas = document.getElementById("graph");
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const c = graph.getContext("2d");
+    c.clearRect(0,0,400,250);
+    c.beginPath();
+    c.moveTo(40,10); c.lineTo(40,220); c.lineTo(380,220); c.stroke();
 
-    ctx.beginPath();
-    ctx.moveTo(40, 10);
-    ctx.lineTo(40, 260);
-    ctx.lineTo(380, 260);
-    ctx.stroke();
+    const maxV = Math.max(...readings.map(r=>r.V));
+    const maxI = Math.max(...readings.map(r=>r.I));
 
-    ctx.fillText("Voltage (V)", 170, 290);
-    ctx.save();
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Current (A)", -170, 15);
-    ctx.restore();
-
-    const maxV = Math.max(...readings.map(r => r.V));
-    const maxI = Math.max(...readings.map(r => r.I));
-
-    ctx.beginPath();
-    readings.forEach((r, i) => {
-      const x = 40 + (r.V / maxV) * 320;
-      const y = 260 - (r.I / maxI) * 240;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+    c.beginPath();
+    readings.forEach((r,i)=>{
+      const x = 40 + (r.V/maxV)*320;
+      const y = 220 - (r.I/maxI)*200;
+      i===0 ? c.moveTo(x,y) : c.lineTo(x,y);
     });
-    ctx.stroke();
-  }
-
-  function startSimulation(current) {
-    const canvas = document.getElementById("sim");
-    const ctx = canvas.getContext("2d");
-
-    if (simInterval) clearInterval(simInterval);
-    electronX = 20;
-
-    const speed = Math.max(current * 10, 2);
-
-    simInterval = setInterval(() => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "black";
-      ctx.fillRect(10, 45, 380, 10);
-
-      ctx.fillStyle = "red";
-      ctx.beginPath();
-      ctx.arc(electronX, 50, 6, 0, Math.PI * 2);
-      ctx.fill();
-
-      electronX += speed;
-      if (electronX > 390) electronX = 10;
-    }, 100);
-  }
-
-  function clearGraph() {
-    const ctx = document.getElementById("graph").getContext("2d");
-    ctx.clearRect(0, 0, 400, 300);
-  }
-
-  function clearSimulation() {
-    const ctx = document.getElementById("sim").getContext("2d");
-    ctx.clearRect(0, 0, 400, 100);
-    if (simInterval) clearInterval(simInterval);
-  }
-
-  function resetLab() {
-    clearGraph();
-    clearSimulation();
-    readings = [];
-    document.getElementById("tableBody").innerHTML = "";
-    document.getElementById("screen2").style.display = "none";
-    document.getElementById("screen1").style.display = "block";
-    document.getElementById("experiment").value = "";
+    c.stroke();
   }
 </script>
 
