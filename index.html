@@ -6,9 +6,11 @@
 <div id="screen1">
   <h2>Virtual Lab</h2>
 
+  <label>Select Experiment:</label><br><br>
   <select id="experiment">
-    <option value="">-- Select Experiment --</option>
-    <option value="ohm">Ohm's Law</option>
+    <option value="">-- Select --</option>
+    <option value="Ohm's Law">Ohm's Law</option>
+    <option value="Series Resistance">Series Resistance</option>
   </select>
   <br><br>
 
@@ -18,43 +20,33 @@
 <!-- ================= SCREEN 2 ================= -->
 <div id="screen2" style="display:none;">
 
-  <h2 id="title"></h2>
+  <h2 id="expName"></h2>
 
   <!-- THEORY -->
   <h3>Theory</h3>
   <p>
-    Ohm’s Law states that the current flowing through a conductor is directly
-    proportional to the voltage applied across it, provided the temperature
-    and other physical conditions remain constant.
-  </p>
-  <p>
-    Mathematically,
-    <br><b>V = I × R</b>
-    <br>where,
-    <br>V = Voltage (Volts)
-    <br>I = Current (Amperes)
-    <br>R = Resistance (Ohms)
+    This experiment demonstrates the relationship between electrical quantities.
+    For Ohm’s Law, current is directly proportional to voltage.
   </p>
 
   <!-- PROCEDURE -->
   <h3>Procedure</h3>
   <ol>
-    <li>Select the Ohm’s Law experiment.</li>
-    <li>Enter a suitable value of resistance.</li>
-    <li>Apply different voltage values.</li>
-    <li>Calculate the corresponding current.</li>
-    <li>Enter the readings into the observation table.</li>
-    <li>Plot the V–I graph using the readings.</li>
+    <li>Select the experiment.</li>
+    <li>Enter voltage and resistance.</li>
+    <li>Add readings to the table.</li>
+    <li>Observe current flow in simulation.</li>
+    <li>Plot the V–I graph.</li>
   </ol>
 
   <!-- INPUT -->
   <h3>Enter Values</h3>
 
-  Voltage (V)<br>
-  <input type="number" id="voltage" step="0.1"><br><br>
+  <label>Voltage (V):</label><br>
+  <input type="number" id="voltage"><br><br>
 
-  Resistance (Ω)<br>
-  <input type="number" id="resistance" step="0.1"><br><br>
+  <label>Resistance (Ω):</label><br>
+  <input type="number" id="resistance"><br><br>
 
   <button onclick="addReading()">Add Reading</button>
 
@@ -78,23 +70,34 @@
   <h3>V–I Graph</h3>
   <canvas id="graph" width="400" height="300" style="border:1px solid black;"></canvas>
 
+  <!-- SIMULATION -->
+  <h3>Simulation (Current Flow)</h3>
+  <canvas id="sim" width="400" height="100" style="border:1px solid black;"></canvas>
+
 </div>
 
-<!-- ================= SCRIPT ================= -->
 <script>
   let readings = [];
+  let simInterval = null;
+  let electronX = 20;
 
   function goNext() {
     const exp = document.getElementById("experiment").value;
 
     if (exp === "") {
-      alert("Select an experiment");
+      alert("Please select an experiment");
       return;
     }
 
+    readings = [];
+    document.getElementById("tableBody").innerHTML = "";
+
     document.getElementById("screen1").style.display = "none";
     document.getElementById("screen2").style.display = "block";
-    document.getElementById("title").innerText = "Ohm's Law Experiment";
+    document.getElementById("expName").innerText = exp;
+
+    clearGraph();
+    clearSimulation();
   }
 
   function addReading() {
@@ -118,9 +121,13 @@
     `;
     document.getElementById("tableBody").innerHTML += row;
 
+    startSimulation(Number(I));
+
     document.getElementById("voltage").value = "";
     document.getElementById("resistance").value = "";
   }
+
+  /* ---------- GRAPH ---------- */
 
   function plotGraph() {
     if (readings.length === 0) {
@@ -129,37 +136,4 @@
     }
 
     const canvas = document.getElementById("graph");
-    const ctx = canvas.getContext("2d");
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Axes
-    ctx.beginPath();
-    ctx.moveTo(40, 10);
-    ctx.lineTo(40, 260);
-    ctx.lineTo(380, 260);
-    ctx.stroke();
-
-    // Labels
-    ctx.fillText("Voltage (V)", 170, 290);
-    ctx.save();
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Current (A)", -170, 15);
-    ctx.restore();
-
-    let maxV = Math.max(...readings.map(r => r.V));
-    let maxI = Math.max(...readings.map(r => r.I));
-
-    ctx.beginPath();
-    readings.forEach((r, i) => {
-      let x = 40 + (r.V / maxV) * 320;
-      let y = 260 - (r.I / maxI) * 240;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-  }
-</script>
-
-</body>
-</html>>
+    const
