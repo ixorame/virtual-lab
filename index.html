@@ -7,7 +7,7 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      background: #eef2f3;
     }
 
     h2 {
@@ -15,68 +15,71 @@
       margin: 20px 0;
     }
 
-    /* ---------- SCREEN SYSTEM ---------- */
     .screen {
       display: none;
       min-height: 100vh;
-      padding: 30px;
+      padding: 40px;
       box-sizing: border-box;
       animation: fade 0.4s ease;
     }
 
-    .active {
-      display: block;
-    }
-
     @keyframes fade {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     button {
       padding: 10px 18px;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       background: #1976d2;
       color: white;
-      cursor: pointer;
       font-size: 14px;
-      transition: background 0.2s;
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
     }
 
     button:hover {
       background: #125aa0;
+      transform: scale(1.05);
     }
 
-    /* ---------- SCREEN 1 ---------- */
+    /* SCREEN 1 */
     #screen1 {
-      background: #dff5df;
+      background: linear-gradient(120deg, #d4f5d4, #e8ffe8);
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
-    #screen1.active {
-      display: flex;
-    }
-
     .card {
       background: white;
       padding: 30px 40px;
-      width: 320px;
-      border-radius: 8px;
+      width: 340px;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
       text-align: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
     select {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       margin: 15px 0;
+      border-radius: 6px;
     }
 
-    /* ---------- OBSERVATION ---------- */
-    .obs-container {
+    /* COMPONENTS */
+    .components span {
+      display: inline-block;
+      padding: 8px 12px;
+      margin: 6px;
+      background: #ddd;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* OBSERVATION */
+    .obs {
       display: flex;
       gap: 40px;
       margin-top: 20px;
@@ -100,13 +103,13 @@
 <h2>Virtual Laboratory</h2>
 
 <!-- SCREEN 1 -->
-<div id="screen1" class="screen active">
+<div id="screen1" class="screen">
   <div class="card">
     <h3>Select Experiment</h3>
     <select>
       <option>Ohm’s Law</option>
     </select>
-    <button onclick="goTo(2)">Next</button>
+    <button onclick="showScreen(2)">Next</button>
   </div>
 </div>
 
@@ -116,29 +119,44 @@
 
   <h4>Theory</h4>
   <p>
-    Ohm’s Law states that the current through a conductor is directly
-    proportional to the voltage across it.
-    <br><br>
-    <b>V = IR</b>
+    Ohm’s Law states that current is directly proportional to voltage.
+    <br><br><b>V = IR</b>
   </p>
 
   <h4>Procedure</h4>
   <ol>
-    <li>Connect the circuit components.</li>
-    <li>Apply different voltages.</li>
-    <li>Measure current values.</li>
-    <li>Plot the V–I graph.</li>
+    <li>Connect battery, resistor, ammeter and voltmeter.</li>
+    <li>Apply voltage.</li>
+    <li>Measure current.</li>
+    <li>Plot V–I graph.</li>
   </ol>
 
-  <button onclick="goTo(3)">Proceed</button>
+  <button onclick="showScreen(3)">Next</button>
 </div>
 
 <!-- SCREEN 3 -->
 <div id="screen3" class="screen">
+  <h3>Components (Conceptual Wiring)</h3>
+
+  <div class="components">
+    <span>Battery</span>
+    <span>Resistor</span>
+    <span>Ammeter</span>
+    <span>Voltmeter</span>
+  </div>
+
+  <p style="margin-top:20px;color:gray;">
+    (Wiring logic can be enforced later – UI placeholder)
+  </p>
+
+  <button onclick="showScreen(4)">Next</button>
+</div>
+
+<!-- SCREEN 4 -->
+<div id="screen4" class="screen">
   <h3>Observation & Graph</h3>
 
-  <div class="obs-container">
-
+  <div class="obs">
     <div>
       Voltage (V):<br>
       <input id="V" type="number"><br><br>
@@ -161,16 +179,20 @@
       <canvas id="graph" width="400" height="250"
               style="border:1px solid black;"></canvas>
     </div>
-
   </div>
 </div>
 
 <script>
-/* ---------- NAVIGATION ---------- */
-function goTo(n) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen' + n).classList.add('active');
+/* ---------- HARD SAFE NAVIGATION ---------- */
+function showScreen(n) {
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById("screen" + i).style.display = "none";
+  }
+  document.getElementById("screen" + n).style.display = "block";
 }
+
+/* Show first screen on load */
+showScreen(1);
 
 /* ---------- OBSERVATION ---------- */
 let readings = [];
@@ -188,24 +210,24 @@ function addRow() {
 
 function plotGraph() {
   const ctx = graph.getContext("2d");
-  ctx.clearRect(0, 0, 400, 250);
+  ctx.clearRect(0,0,400,250);
 
   ctx.beginPath();
-  ctx.moveTo(40, 10);
-  ctx.lineTo(40, 220);
-  ctx.lineTo(380, 220);
+  ctx.moveTo(40,10);
+  ctx.lineTo(40,220);
+  ctx.lineTo(380,220);
   ctx.stroke();
 
-  if (readings.length === 0) return;
+  if (!readings.length) return;
 
-  const maxV = Math.max(...readings.map(r => r.V));
-  const maxI = Math.max(...readings.map(r => r.I));
+  const maxV = Math.max(...readings.map(r=>r.V));
+  const maxI = Math.max(...readings.map(r=>r.I));
 
   ctx.beginPath();
-  readings.forEach((r, i) => {
-    const x = 40 + (r.V / maxV) * 320;
-    const y = 220 - (r.I / maxI) * 200;
-    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  readings.forEach((r,i)=>{
+    const x = 40 + (r.V/maxV)*320;
+    const y = 220 - (r.I/maxI)*200;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
   });
   ctx.stroke();
 }
