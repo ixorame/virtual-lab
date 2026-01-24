@@ -41,6 +41,11 @@
       border: 1px solid black;
       width: 780px;
     }
+
+    #result {
+      margin-top: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 
@@ -73,6 +78,9 @@
 <div id="status">
   <h3>Placed Components (Internal State)</h3>
   <ul id="componentList"></ul>
+
+  <button onclick="validateCircuit()">Validate Circuit</button>
+  <div id="result"></div>
 </div>
 
 <script>
@@ -95,22 +103,20 @@
     const label = ev.dataTransfer.getData("label");
 
     componentCount++;
-
     const id = type + componentCount;
 
-    // Visual element
+    // Visual placement
     const comp = document.createElement("div");
     comp.className = "placed";
     comp.innerText = label;
     comp.dataset.type = type;
     comp.dataset.id = id;
-
     comp.style.left = ev.offsetX + "px";
     comp.style.top = ev.offsetY + "px";
 
     ev.target.appendChild(comp);
 
-    // Logical model (IMPORTANT)
+    // Logical model
     placedComponents.push({
       id: id,
       type: type,
@@ -130,6 +136,31 @@
       li.innerText = `${c.id} → ${c.type}`;
       list.appendChild(li);
     });
+
+    document.getElementById("result").innerText = "";
+  }
+
+  /* ================= VALIDATION LOGIC ================= */
+
+  function validateCircuit() {
+    let batteryCount = 0;
+    let resistorCount = 0;
+
+    placedComponents.forEach(c => {
+      if (c.type === "battery") batteryCount++;
+      if (c.type === "resistor") resistorCount++;
+    });
+
+    const result = document.getElementById("result");
+
+    if (batteryCount === 1 && resistorCount === 1) {
+      result.innerText = "✔ Circuit structure is CORRECT (basic check passed)";
+      result.style.color = "green";
+    } else {
+      result.innerText =
+        "✖ Incorrect circuit: Requires exactly 1 Battery and 1 Resistor";
+      result.style.color = "red";
+    }
   }
 </script>
 
