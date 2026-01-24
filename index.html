@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Virtual Lab – Ohm’s Law (Correct Instruments)</title>
+  <title>Virtual Lab – Ohm’s Law with Simulation</title>
   <style>
     body { font-family: Arial; }
 
     #palette {
-      width: 200px;
+      width: 220px;
       border: 2px solid black;
       padding: 10px;
       float: left;
@@ -22,7 +22,7 @@
     }
 
     #workspace {
-      margin-left: 220px;
+      margin-left: 240px;
       width: 600px;
       height: 260px;
       border: 2px dashed black;
@@ -44,7 +44,7 @@
       margin-top: 20px;
       border: 1px solid black;
       padding: 10px;
-      width: 860px;
+      width: 880px;
     }
 
     #experiment {
@@ -57,9 +57,9 @@
 
 <body>
 
-<h2>Virtual Lab – Ohm’s Law</h2>
+<h2>Virtual Lab – Ohm’s Law (Simulation Enabled)</h2>
 
-<!-- PALETTE -->
+<!-- COMPONENT PALETTE -->
 <div id="palette">
   <div class="component" draggable="true" ondragstart="drag(event)" data-type="battery">Battery</div>
   <div class="component" draggable="true" ondragstart="drag(event)" data-type="resistor">Resistor</div>
@@ -95,11 +95,14 @@
       </thead>
       <tbody id="tableBody"></tbody>
     </table>
+
+    <h4>Simulation (Current Flow)</h4>
+    <canvas id="sim" width="400" height="80" style="border:1px solid black;"></canvas>
   </div>
 </div>
 
 <script>
-/* ========== STATE ========== */
+/* ===== STATE ===== */
 let placedComponents = [];
 let connections = [];
 let selected = null;
@@ -107,7 +110,10 @@ let componentCount = 0;
 let circuitValidated = false;
 let readings = [];
 
-/* ========== DRAG & DROP ========== */
+let simInterval = null;
+let electronX = 20;
+
+/* ===== DRAG & DROP ===== */
 function drag(ev) {
   ev.dataTransfer.setData("type", ev.target.dataset.type);
 }
@@ -130,7 +136,7 @@ function drop(ev) {
   placedComponents.push({ id: el.dataset.id, type });
 }
 
-/* ========== CONNECTION LOGIC ========== */
+/* ===== CONNECTION LOGIC ===== */
 function select(el) {
   if (!selected) {
     selected = el;
@@ -142,38 +148,35 @@ function select(el) {
   }
 }
 
-/* ========== VALIDATION (CORRECT) ========== */
+/* ===== VALIDATION ===== */
 function validateCircuit() {
   const counts = { battery:0, resistor:0, ammeter:0, voltmeter:0 };
-
   placedComponents.forEach(c => counts[c.type]++);
 
   if (counts.battery !== 1)
-    return fail("Exactly ONE battery is required");
-
+    return fail("Exactly ONE battery required");
   if (counts.resistor !== 1)
-    return fail("Exactly ONE resistor is required");
-
+    return fail("Exactly ONE resistor required");
   if (counts.ammeter !== 1)
-    return fail("Ammeter is mandatory to measure current");
-
+    return fail("Ammeter is mandatory");
   if (counts.voltmeter !== 1)
-    return fail("Voltmeter is mandatory to measure voltage");
+    return fail("Voltmeter is mandatory");
 
   circuitValidated = true;
   unlockExperiment();
-  result.innerText = "✔ Correct circuit with proper instruments";
+  result.innerText = "✔ Circuit correct. Simulation enabled.";
   result.style.color = "green";
 }
 
 function fail(msg) {
   circuitValidated = false;
+  stopSimulation();
   lockExperiment();
   result.innerText = "✖ " + msg;
   result.style.color = "red";
 }
 
-/* ========== EXPERIMENT GATE ========== */
+/* ===== EXPERIMENT GATE ===== */
 function unlockExperiment() {
   experiment.style.opacity = "1";
   experiment.style.pointerEvents = "auto";
@@ -183,7 +186,7 @@ function lockExperiment() {
   experiment.style.pointerEvents = "none";
 }
 
-/* ========== EXPERIMENT LOGIC ========== */
+/* ===== EXPERIMENT LOGIC ===== */
 function addReading() {
   if (!circuitValidated) return;
 
@@ -196,6 +199,36 @@ function addReading() {
 
   tableBody.innerHTML +=
     `<tr><td>${V}</td><td>${R}</td><td>${I}</td></tr>`;
+
+  startSimulation(Number(I));
+}
+
+/* ===== SIMULATION (AMMETER-BASED) ===== */
+function startSimulation(current) {
+  const ctx = sim.getContext("2d");
+  if (simInterval) clearInterval(simInterval);
+  electronX = 20;
+
+  const speed = Math.max(current * 10, 2);
+
+  simInterval = setInterval(() => {
+    ctx.clearRect(0,0,400,80);
+
+    ctx.fillStyle = "black";
+    ctx.fillRect(10,35,380,8);
+
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(electronX,39,5,0,Math.PI*2);
+    ctx.fill();
+
+    electronX += speed;
+    if (electronX > 390) electronX = 10;
+  }, 100);
+}
+
+function stopSimulation() {
+  if (simInterval) clearInterval(simInterval);
 }
 </script>
 
