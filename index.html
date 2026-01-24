@@ -30,8 +30,12 @@
       position: absolute;
       background-color: lightblue;
       padding: 8px;
-      border: 1px solid black;
-      cursor: default;
+      border: 2px solid black;
+      cursor: pointer;
+    }
+
+    .selected {
+      border: 2px solid red;
     }
 
     #status {
@@ -55,18 +59,10 @@
 
 <!-- COMPONENT PALETTE -->
 <div id="palette">
-  <div class="component" draggable="true" ondragstart="drag(event)" data-type="battery">
-    Battery
-  </div>
-  <div class="component" draggable="true" ondragstart="drag(event)" data-type="resistor">
-    Resistor
-  </div>
-  <div class="component" draggable="true" ondragstart="drag(event)" data-type="ammeter">
-    Ammeter
-  </div>
-  <div class="component" draggable="true" ondragstart="drag(event)" data-type="voltmeter">
-    Voltmeter
-  </div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="battery">Battery</div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="resistor">Resistor</div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="ammeter">Ammeter</div>
+  <div class="component" draggable="true" ondragstart="drag(event)" data-type="voltmeter">Voltmeter</div>
 </div>
 
 <!-- WORKSPACE -->
@@ -74,10 +70,13 @@
   Drop components here
 </div>
 
-<!-- STATUS PANEL -->
+<!-- STATUS -->
 <div id="status">
-  <h3>Placed Components (Internal State)</h3>
+  <h3>Placed Components</h3>
   <ul id="componentList"></ul>
+
+  <h3>Connections</h3>
+  <ul id="connectionList"></ul>
 
   <button onclick="validateCircuit()">Validate Circuit</button>
   <div id="result"></div>
@@ -86,6 +85,8 @@
 <script>
   let componentCount = 0;
   let placedComponents = [];
+  let connections = [];
+  let selectedComponent = null;
 
   function drag(ev) {
     ev.dataTransfer.setData("type", ev.target.dataset.type);
@@ -105,26 +106,39 @@
     componentCount++;
     const id = type + componentCount;
 
-    // Visual placement
     const comp = document.createElement("div");
     comp.className = "placed";
     comp.innerText = label;
     comp.dataset.type = type;
     comp.dataset.id = id;
+
     comp.style.left = ev.offsetX + "px";
     comp.style.top = ev.offsetY + "px";
 
+    comp.onclick = () => selectComponent(comp);
+
     ev.target.appendChild(comp);
 
-    // Logical model
-    placedComponents.push({
-      id: id,
-      type: type,
-      x: ev.offsetX,
-      y: ev.offsetY
-    });
-
+    placedComponents.push({ id, type });
     updateStatus();
+  }
+
+  function selectComponent(comp) {
+    if (!selectedComponent) {
+      selectedComponent = comp;
+      comp.classList.add("selected");
+    } else if (selectedComponent !== comp) {
+      // create connection
+      connections.push({
+        from: selectedComponent.dataset.id,
+        to: comp.dataset.id
+      });
+
+      selectedComponent.classList.remove("selected");
+      selectedComponent = null;
+
+      updateConnections();
+    }
   }
 
   function updateStatus() {
@@ -140,27 +154,37 @@
     document.getElementById("result").innerText = "";
   }
 
-  /* ================= VALIDATION LOGIC ================= */
+  function updateConnections() {
+    const list = document.getElementById("connectionList");
+    list.innerHTML = "";
+
+    connections.forEach(c => {
+      const li = document.createElement("li");
+      li.innerText = `${c.from} ↔ ${c.to}`;
+      list.appendChild(li);
+    });
+  }
+
+  /* ===== Validation still only checks component rules ===== */
 
   function validateCircuit() {
-    let batteryCount = 0;
-    let resistorCount = 0;
+    const counts = { battery:0, resistor:0, ammeter:0, voltmeter:0 };
+    placedComponents.forEach(c => counts[c.type]++);
 
-    placedComponents.forEach(c => {
-      if (c.type === "battery") batteryCount++;
-      if (c.type === "resistor") resistorCount++;
-    });
+    if (counts.battery !== 1) return showError("Exactly one battery required");
+    if (counts.resistor !== 1) return showError("Exactly one resistor required");
+    if (counts.ammeter !== 1) return showError("Exactly one ammeter required");
+    if (counts.voltmeter > 1) return showError("At most one voltmeter allowed");
 
-    const result = document.getElementById("result");
+    document.getElementById("result").innerText =
+      "✔ Component rules passed (connections recorded)";
+    document.getElementById("result").style.color = "green";
+  }
 
-    if (batteryCount === 1 && resistorCount === 1) {
-      result.innerText = "✔ Circuit structure is CORRECT (basic check passed)";
-      result.style.color = "green";
-    } else {
-      result.innerText =
-        "✖ Incorrect circuit: Requires exactly 1 Battery and 1 Resistor";
-      result.style.color = "red";
-    }
+  function showError(msg) {
+    const r = document.getElementById("result");
+    r.innerText = "✖ " + msg;
+    r.style.color = "red";
   }
 </script>
 
