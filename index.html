@@ -112,6 +112,9 @@
   border: 1px solid #000;
   cursor: pointer;
 }
+.placed-comp {
+  cursor: move;
+}
 
 
 
@@ -178,6 +181,7 @@
 <div id="circuit-area" class="grid-bg">
   Drop components here
 </div>
+
 
 
   <!-- INPUT -->
@@ -356,7 +360,40 @@ circuitArea.addEventListener("drop", e => {
 
   circuitArea.appendChild(el);
   placedComponents.push(type);
+  let activeComp = null;
+let offsetX = 0;
+let offsetY = 0;
+
+document.addEventListener("mousedown", e => {
+  if (e.target.classList.contains("placed-comp")) {
+    activeComp = e.target;
+    const rect = activeComp.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+  }
 });
+
+document.addEventListener("mousemove", e => {
+  if (!activeComp) return;
+
+  const parentRect = circuitArea.getBoundingClientRect();
+  let x = e.clientX - parentRect.left - offsetX;
+  let y = e.clientY - parentRect.top - offsetY;
+
+  // SNAP TO GRID
+  x = Math.round(x / GRID_SIZE) * GRID_SIZE;
+  y = Math.round(y / GRID_SIZE) * GRID_SIZE;
+
+  activeComp.style.left = x + "px";
+  activeComp.style.top = y + "px";
+});
+
+document.addEventListener("mouseup", () => {
+  activeComp = null;
+});
+});
+  const GRID_SIZE = 20; // matches graph-paper grid
+
 
 </script>
 
