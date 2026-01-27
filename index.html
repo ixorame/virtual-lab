@@ -1,9 +1,74 @@
 <!DOCTYPE html>
 <html>
+
+<head>
+  <title>Virtual Lab</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    /* ---------- GRAPH PAPER GRID ---------- */
+    .grid-bg {
+      background-color: #ffffff;
+      background-image:
+        linear-gradient(to right, #e0e0e0 1px, transparent 1px),
+        linear-gradient(to bottom, #e0e0e0 1px, transparent 1px),
+        linear-gradient(to right, #c8c8c8 1px, transparent 1px),
+        linear-gradient(to bottom, #c8c8c8 1px, transparent 1px);
+      background-size:
+        20px 20px,
+        20px 20px,
+        100px 100px,
+        100px 100px;
+    }
+
+    /* ---------- SCREEN STYLING ---------- */
+    #screen1 {
+      min-height: 100vh;
+      padding-top: 40px;
+      text-align: center;
+    }
+
+    #screen2 {
+      min-height: 100vh;
+      padding: 20px 40px;
+    }
+
+    button {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    select, input {
+      padding: 6px;
+      width: 200px;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    canvas {
+      background: #fff;
+    }
+  </style>
+
+</head>
+
 <body>
 
 <!-- ================= SCREEN 1 ================= -->
-<div id="screen1">
+<div id="screen1" class="grid-bg">
   <h2>Virtual Lab</h2>
 
   <label>Select Experiment:</label><br><br>
@@ -18,7 +83,7 @@
 </div>
 
 <!-- ================= SCREEN 2 ================= -->
-<div id="screen2" style="display:none;">
+<div id="screen2" class="grid-bg" style="display:none;">
 
   <h2 id="expName"></h2>
 
@@ -138,12 +203,6 @@
     ctx.lineTo(380, 260);
     ctx.stroke();
 
-    ctx.fillText("Voltage (V)", 170, 290);
-    ctx.save();
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Current (A)", -170, 15);
-    ctx.restore();
-
     const maxV = Math.max(...readings.map(r => r.V));
     const maxI = Math.max(...readings.map(r => r.I));
 
@@ -168,23 +227,17 @@
 
     simInterval = setInterval(() => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "black";
       ctx.fillRect(10, 45, 380, 10);
-
-      ctx.fillStyle = "red";
       ctx.beginPath();
       ctx.arc(electronX, 50, 6, 0, Math.PI * 2);
       ctx.fill();
-
       electronX += speed;
       if (electronX > 390) electronX = 10;
     }, 100);
   }
 
   function clearGraph() {
-    const ctx = document.getElementById("graph").getContext("2d");
-    ctx.clearRect(0, 0, 400, 300);
+    document.getElementById("graph").getContext("2d").clearRect(0, 0, 400, 300);
   }
 
   function clearSimulation() {
