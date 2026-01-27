@@ -86,6 +86,34 @@
   box-shadow: 0 6px 16px rgba(0,0,0,0.15);
   text-align: center;
 }
+#palette {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.comp {
+  padding: 8px 12px;
+  background: #ddd;
+  border: 1px solid #333;
+  cursor: grab;
+  user-select: none;
+}
+
+#circuit-area {
+  width: 600px;
+  height: 250px;
+  border: 2px dashed #333;
+  position: relative;
+}
+.placed-comp {
+  padding: 6px;
+  background: #bde;
+  border: 1px solid #000;
+  cursor: pointer;
+}
+
+
 
   </style>
 
@@ -135,6 +163,19 @@
     <li>Add readings to the table.</li>
     <li>Observe simulation and graph.</li>
   </ol>
+  <h3>Circuit Area</h3>
+
+<div id="palette">
+  <div class="comp" draggable="true" data-type="battery">Battery</div>
+  <div class="comp" draggable="true" data-type="resistor">Resistor</div>
+  <div class="comp" draggable="true" data-type="ammeter">Ammeter</div>
+  <div class="comp" draggable="true" data-type="voltmeter">Voltmeter</div>
+</div>
+
+<div id="circuit-area" class="grid-bg">
+  Drop components here
+</div>
+
 
   <!-- INPUT -->
   <h3>Enter Values</h3>
@@ -288,6 +329,32 @@
     document.getElementById("screen1").style.display = "block";
     document.getElementById("experiment").value = "";
   }
+  const circuitArea = document.getElementById("circuit-area");
+let placedComponents = [];
+
+document.querySelectorAll(".comp").forEach(comp => {
+  comp.addEventListener("dragstart", e => {
+    e.dataTransfer.setData("type", comp.dataset.type);
+  });
+});
+
+circuitArea.addEventListener("dragover", e => e.preventDefault());
+
+circuitArea.addEventListener("drop", e => {
+  e.preventDefault();
+  const type = e.dataTransfer.getData("type");
+
+  const el = document.createElement("div");
+  el.className = "placed-comp";
+  el.innerText = type;
+  el.style.position = "absolute";
+  el.style.left = e.offsetX + "px";
+  el.style.top = e.offsetY + "px";
+
+  circuitArea.appendChild(el);
+  placedComponents.push(type);
+});
+
 </script>
 
 </body>
