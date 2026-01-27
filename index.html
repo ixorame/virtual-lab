@@ -61,6 +61,32 @@
     canvas {
       background: #fff;
     }
+    /* ---------- SCREEN 1 LAYOUT ---------- */
+#welcome-area {
+  text-align: center;
+  margin-top: 40px;
+}
+
+#welcome-area h1 {
+  margin-bottom: 10px;
+}
+
+#welcome-area p {
+  font-size: 16px;
+  color: #333;
+}
+
+/* White box at bottom */
+#experiment-box {
+  background: white;
+  width: 360px;
+  margin: 120px auto 0 auto;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  text-align: center;
+}
+
   </style>
 
 </head>
@@ -69,8 +95,14 @@
 
 <!-- ================= SCREEN 1 ================= -->
 <div id="screen1" class="grid-bg">
-  <h2>Virtual Lab</h2>
+  <div id="welcome-area">
+  <h1>Welcome to the Virtual Laboratory</h1>
+  <p>
+    Perform experiments virtually by following the standard laboratory procedure.
+  </p>
+</div>
 
+<div id="experiment-box">
   <label>Select Experiment:</label><br><br>
   <select id="experiment">
     <option value="">-- Select --</option>
@@ -78,6 +110,8 @@
     <option value="Series Resistance">Series Resistance</option>
   </select>
   <br><br>
+  <button onclick="goNext()">Start Experiment</button>
+</div>
 
   <button onclick="goNext()">Start</button>
 </div>
