@@ -104,8 +104,9 @@
   width: 600px;
   height: 250px;
   border: 2px dashed #333;
-  position: relative;
+  position: relative;   /* IMPORTANT */
 }
+
 .placed-comp {
   padding: 6px;
   background: #bde;
@@ -179,8 +180,11 @@
 </div>
 
 <div id="circuit-area" class="grid-bg">
+  <canvas id="wireCanvas" width="600" height="250"
+          style="position:absolute; left:0; top:0; pointer-events:none;"></canvas>
   Drop components here
 </div>
+
 
 
 
@@ -370,6 +374,53 @@ document.addEventListener("mousedown", e => {
     const rect = activeComp.getBoundingClientRect();
     offsetX = e.clientX - rect.left;
     offsetY = e.clientY - rect.top;
+  const wireCanvas = document.getElementById("wireCanvas");
+const wireCtx = wireCanvas.getContext("2d");
+
+let selectedComp = null;
+let connections = [];
+
+// Click to select components for wiring
+document.addEventListener("click", e => {
+  if (!e.target.classList.contains("placed-comp")) return;
+
+  if (!selectedComp) {
+    selectedComp = e.target;
+    selectedComp.style.borderColor = "red";
+  } else if (selectedComp !== e.target) {
+    connections.push({
+      from: selectedComp,
+      to: e.target
+    });
+
+    selectedComp.style.borderColor = "#000";
+    selectedComp = null;
+
+    drawWires();
+  }
+});
+
+function drawWires() {
+  wireCtx.clearRect(0, 0, wireCanvas.width, wireCanvas.height);
+
+  const areaRect = circuitArea.getBoundingClientRect();
+
+  connections.forEach(conn => {
+    const r1 = conn.from.getBoundingClientRect();
+    const r2 = conn.to.getBoundingClientRect();
+
+    const x1 = r1.left - areaRect.left + r1.width / 2;
+    const y1 = r1.top - areaRect.top + r1.height / 2;
+    const x2 = r2.left - areaRect.left + r2.width / 2;
+    const y2 = r2.top - areaRect.top + r2.height / 2;
+
+    wireCtx.beginPath();
+    wireCtx.moveTo(x1, y1);
+    wireCtx.lineTo(x2, y2);
+    wireCtx.stroke();
+  });
+}
+
   }
 });
 
